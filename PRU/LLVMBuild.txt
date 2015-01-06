@@ -1,0 +1,15 @@
+[common]
+subdirectories = asmprinter desc info
+
+[component_0]
+type = TargetGroup
+name = PRU
+parent = Target
+has_asmprinter = 1
+
+[component_1]
+type = Library
+name = PRUCodeGen
+parent = PRU
+required_libraries = AsmPrinter CodeGen Core MC PRUAsmPrinter PRUDesc PRUInfo SelectionDAG Support Target
+add_to_library_groups = PRU

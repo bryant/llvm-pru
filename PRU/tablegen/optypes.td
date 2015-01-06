@@ -1,0 +1,28 @@
+def i8imm_31 : ImmLeaf<i8, [{return 0 <= Imm && Imm <= 31;}]>;
+def i16imm_31 : ImmLeaf<i16, [{return 0 <= Imm && Imm <= 31;}]>;
+def i32imm_31 : ImmLeaf<i32, [{return 0 <= Imm && Imm <= 31;}]>;
+
+def i8imm_255 : ImmLeaf<i8, [{return 0 <= Imm && Imm <= 255;}]>;
+def i16imm_255 : ImmLeaf<i16, [{return 0 <= Imm && Imm <= 255;}]>;
+def i32imm_255 : ImmLeaf<i32, [{return 0 <= Imm && Imm <= 255;}]>;
+
+def i16imm_65535 : ImmLeaf<i16, [{return 0 <= Imm && Imm <= 65535}]>;
+def i32imm_65535 : ImmLeaf<i32, [{return 0 <= Imm && Imm <= 65535;}]>;
+
+def jump_target : Operand<OtherVT> { let OperandType = "OPERAND_PCREL"; }
+
+def gaddr : Operand<iPTR>;
+
+def addr : Operand<iPTR>, ComplexPattern<iPTR, 2, "SelectAddress"> {
+    let MIOperandInfo = (ops reg32: $base, i32imm: $offset);
+    let PrintMethod = "print_addr";
+}
+
+def retflag : SDNode<"PRUISD::RET_FLAG", SDTNone,
+                     [SDNPHasChain, SDNPOptInGlue, SDNPVariadic]>;
+
+def sdt_call : SDTypeProfile<0, -1, [SDTCisPtrTy<0>]>;
+
+def pru_call : SDNode<"PRUISD::CALL",
+                      sdt_call,
+                      [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue, SDNPVariadic]>;
