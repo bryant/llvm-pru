@@ -33,7 +33,10 @@ def pru_call_conv : CallingConv<[
             [r15, r16, r17, r18, r19, r20, r21, r22, r23, r24, r25, r26, r27, r28, r29]
         >>,
 */
-    CCPassByVal<1, 1>
+    // couldn't alloc a reg, assign to stack
+    CCIfType<[i8], CCPassByVal<1, 1>>,
+    CCIfType<[i16], CCPassByVal<2, 1>>,
+    CCIfType<[i32], CCPassByVal<4, 1>>
 ]>;
 
 def pru_return_conv : CallingConv<[
