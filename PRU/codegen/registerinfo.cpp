@@ -9,8 +9,8 @@
 #include "llvm/Target/TargetSubtargetInfo.h"
 
 #include "registerinfo.h"
-#include "targetdesc.h"
 #include "subtarget.h"
+#include "targetdesc.h"
 
 using namespace llvm;
 
@@ -60,29 +60,18 @@ void PRURegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
     dbgs() << "eliminateFrameIndex called\n";
     assert(SPAdj == 0 && "Unexpected");
 
-    MachineInstr &MI = *II;
-    MachineBasicBlock &b = *MI.getParent();
-    MachineFunction &f = *b.getParent();
-    DebugLoc dl = MI.getDebugLoc();
+    MachineInstr &i = *II;
+    MachineFrameInfo &mf = *i.getParent()->getParent()->getFrameInfo();
 
-    int idx = MI.getOperand(FIOperandNum).getIndex();
+    int idx = i.getOperand(FIOperandNum).getIndex();
 
-    // unsigned BasePtr = (TFI->hasFP(MF) ? PRU::r4 : PRU::r2);
-    int offset = f.getFrameInfo()->getStackSize() +
-                 f.getFrameInfo()->getObjectOffset(idx) +
-                 MI.getOperand(FIOperandNum + 1).getImm();
+    int offset = mf.getStackSize() + mf.getObjectOffset(idx) +
+                 i.getOperand(FIOperandNum + 1).getImm();
 
     dbgs() << "[pru] eliminateFrameIndex offset = " << offset << "\n";
 
-    /*
-    if (!TFI->hasFP(MF))
-        Offset += MF.getFrameInfo()->getStackSize();
-    else
-        Offset += 2; // Skip the saved FP
-    */
-
-    MI.getOperand(FIOperandNum).ChangeToRegister(PRU::r2, false);
-    MI.getOperand(FIOperandNum + 1).ChangeToImmediate(offset);
+    i.getOperand(FIOperandNum).ChangeToRegister(PRU::r2, false);
+    i.getOperand(FIOperandNum + 1).ChangeToImmediate(offset);
 }
 
 unsigned PRURegisterInfo::getFrameRegister(const MachineFunction &MF) const {
