@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <functional>
 #include <utility>
 #include <vector>
@@ -93,6 +94,16 @@ struct MemLoc {
 
         return true;
     }
+
+    bool operator<(const MemLoc &other) {
+        // assert(kind == other.kind);
+        if (kind == MemLoc::BaseOffset) {
+            return b.start < other.b.start;
+        } else if (kind == MemLoc::FrameSlot) {
+            return slotindex < other.slotindex;
+        }
+        return true;
+    }
 };
 
 raw_ostream &operator<<(raw_ostream &o, const MemLoc &l) {
@@ -120,6 +131,8 @@ struct Cluster {
             return rv;
         });
     }
+
+    void sort() { std::sort(std::next(memops.begin()), memops.end()); }
 };
 
 raw_ostream &operator<<(raw_ostream &o, const Cluster &c) {
@@ -187,11 +200,25 @@ struct Collector {
         bool rv = false;
         DEBUG(dbgs() << clusters.size() << " clusters:\n");
         for (Cluster &c : clusters) {
+            if (c.memops.size() > 1) {
+                c.sort();
+            }
             DEBUG(dbgs() << c << "\n");
             if (c.memops.size() > 1) {
                 rv = true;
-                for (MemLoc &loc : c.memops) {
-                    blk.splice(c.memops[0].i, &blk, loc.i);
+
+                auto loc = std::next(c.memops.begin());
+                for (; loc != c.memops.end() && *loc < c.memops[0]; ++loc) {
+                    blk.splice(c.memops[0].i, &blk, loc->i);
+                }
+
+                auto insert =
+                    std::next(MachineBasicBlock::instr_iterator(c.memops[0].i));
+
+                for (; loc != c.memops.end(); ++loc) {
+                    blk.splice(insert, &blk, loc->i);
+                    insert =
+                        std::next(MachineBasicBlock::instr_iterator(loc->i));
                 }
             }
         }
