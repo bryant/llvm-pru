@@ -64,8 +64,9 @@ void PRURegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
     MachineFrameInfo &mf = *i.getParent()->getParent()->getFrameInfo();
 
     int idx = i.getOperand(FIOperandNum).getIndex();
+    int64_t spoff = mf.getObjectOffset(idx);
 
-    int offset = mf.getStackSize() + mf.getObjectOffset(idx) +
+    int offset = (idx < 0 ? mf.getStackSize() + spoff : -spoff) +
                  i.getOperand(FIOperandNum + 1).getImm();
 
     dbgs() << "[pru] eliminateFrameIndex offset = " << offset << "\n";
