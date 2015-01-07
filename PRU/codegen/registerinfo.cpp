@@ -19,21 +19,12 @@ using namespace llvm;
 #define GET_REGINFO_TARGET_DESC
 #include "registerinfo.inc"
 
-// FIXME: Provide proper call frame setup / destroy opcodes.
+// TODO: Provide proper call frame setup / destroy opcodes.
 PRURegisterInfo::PRURegisterInfo() : PRUGenRegisterInfo(PRU::r14) {}
 
 const MCPhysReg *
 PRURegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
-    const PRUFrameLowering *fl = getFrameLowering(*MF);
-    static const MCPhysReg callee_saved[] = {
-        PRU::r4, PRU::r3_w2, PRU::r5,  PRU::r6,  PRU::r7,  PRU::r8,
-        PRU::r9, PRU::r10,   PRU::r11, PRU::r12, PRU::r13, 0};
-
-    if (fl->hasFP(*MF)) {
-        return callee_saved;
-    }
-
-    return callee_saved + 1;
+    return callee_saved_SaveList;
 }
 
 BitVector PRURegisterInfo::getReservedRegs(const MachineFunction &MF) const {
