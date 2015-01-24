@@ -19,9 +19,9 @@
 
 #include "instrinfo.h"
 #include "subtarget.h"
+#include "targetdesc.h"
 #include "targetlowering.h"
 #include "targetmachine.h"
-#include "targetdesc.h"
 
 using namespace llvm;
 
@@ -223,32 +223,6 @@ static bool arg_reg_block(unsigned &argnum, MVT &valty, MVT &locty,
 
 #include "callingconv.inc"
 
-static const TargetRegisterClass *register_class_for(EVT vartype) {
-    switch (vartype.getSimpleVT().SimpleTy) {
-    default:
-#ifndef NDEBUG
-        errs() << "no register class for type "
-               << vartype.getSimpleVT().SimpleTy << "\n";
-#endif
-        llvm_unreachable(nullptr);
-        return nullptr;
-
-    case MVT::i1:
-        return &PRU::reg32RegClass;
-
-    case MVT::i8:
-        return &PRU::reg8RegClass;
-
-    case MVT::i16:
-        return &PRU::reg16RegClass;
-
-    case MVT::i32:
-        return &PRU::reg32RegClass;
-
-        // TODO: other types.
-    }
-}
-
 void dump_assigns(ArrayRef<CCValAssign> args) {
     dbgs() << "dump_assigns:\n";
     for (unsigned n = 0; n < args.size(); ++n) {
@@ -278,7 +252,6 @@ SDValue PRUTargetLowering::LowerFormalArguments(
 
     MachineFunction &MF = DAG.getMachineFunction();
     MachineFrameInfo *MFI = MF.getFrameInfo();
-    // Machinefunctioninfo *FuncInfo = MF.getInfo<machinefunctioninfo>();
 
     // Assign locations to all of the incoming arguments.
     SmallVector<CCValAssign, 16> args;
@@ -295,12 +268,16 @@ SDValue PRUTargetLowering::LowerFormalArguments(
     for (CCValAssign &arg : args) {
         if (arg.isRegLoc()) {
             EVT vartype = arg.getLocVT();
-            auto virtreg =
-                MF.addLiveIn(arg.getLocReg(), register_class_for(vartype));
-            auto copy_node = DAG.getCopyFromReg(chain, dl, virtreg, vartype);
+            const TargetRegisterInfo &reginfo =
+                *MF.getSubtarget().getRegisterInfo();
+            const TargetRegisterClass *regcls = reginfo.getMinimalPhysRegClass(
+                arg.getLocReg(), vartype.getSimpleVT().SimpleTy);
+            unsigned virtreg = MF.addLiveIn(arg.getLocReg(), regcls);
+            SDValue copy_node = DAG.getCopyFromReg(chain, dl, virtreg, vartype);
 
             dbgs() << "processed a reg loc:\n";
             copy_node.dump();
+
             InVals.push_back(copy_node);
 
         } else if (arg.isMemLoc()) {
