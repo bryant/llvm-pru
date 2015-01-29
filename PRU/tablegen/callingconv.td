@@ -26,17 +26,8 @@ def pru_call_conv : CallingConv<[
     CCIfType<[i32], CCAssignToReg<[r14, r15, r16, r17, r18, r19, r20, r21, r22,
         r23, r24, r25, r26, r27, r28, r29]>>,
 
-/*
-    CCIfType<[i64],
-        CCAssignToRegWithShadow<
-            [r14, r15, r16, r17, r18, r19, r20, r21, r22, r23, r24, r25, r26, r27, r28],
-            [r15, r16, r17, r18, r19, r20, r21, r22, r23, r24, r25, r26, r27, r28, r29]
-        >>,
-*/
     // couldn't alloc a reg, assign to stack
-    CCIfType<[i8], CCPassByVal<1, 1>>,
-    CCIfType<[i16], CCPassByVal<2, 1>>,
-    CCIfType<[i32], CCPassByVal<4, 1>>
+    CCAssignToStack<0, 0>
 ]>;
 
 def pru_return_conv : CallingConv<[
