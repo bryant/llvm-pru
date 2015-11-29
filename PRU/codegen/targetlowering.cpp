@@ -199,6 +199,8 @@ static bool alloc_reg_block(unsigned &argnum, MVT &valty, MVT &locty,
     if (total_bytes == 8) {
         unsigned firstreg = cc.AllocateRegBlock(reg32s, 2);
         if (firstreg != 0) {
+            assert(pending.size() == 2 &&
+                   "should only have gotten here via an i64 arg");
             pending[0].convertToReg(firstreg);
             pending[1].convertToReg(firstreg + 1);
             cc.addLoc(pending[0]);
