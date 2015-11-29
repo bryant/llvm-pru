@@ -1,8 +1,8 @@
 def pru_call_conv : CallingConv<[
     CCIfByVal<CCPassByVal<1, 1>>,
 
+    CCIfConsecutiveRegs<CCCustom<"alloc_reg_block">>,
 
-    //CCIfConsecutiveRegs<CCCustom<"arg_reg_block">>,
     CCIfType<[i1], CCPromoteToType<i8>>,
 
     CCIfType<[i8], CCAssignToReg<[

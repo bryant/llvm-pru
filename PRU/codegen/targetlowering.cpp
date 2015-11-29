@@ -170,55 +170,53 @@ SDValue PRUTargetLowering::LowerOperation(SDValue op, SelectionDAG &dag) const {
     llvm_unreachable("unimplemented operand");
 }
 
-//===----------------------------------------------------------------------===//
-//                      Calling Convention Implementation
-//===----------------------------------------------------------------------===//
-
 bool PRUTargetLowering::functionArgumentNeedsConsecutiveRegisters(
     Type *ty, CallingConv::ID cc, bool) const {
-
-    auto &tm = static_cast<const PRUTargetMachine &>(getTargetMachine());
-    SmallVector<EVT, 4> vts;
-    ComputeValueVTs(*this, const_cast<DataLayout &>(tm.getDataLayout()), ty,
-                    vts);
-    unsigned total_regs = 0;
-
-    for (EVT &vt : vts) {
-        total_regs += this->getNumRegisters(ty->getContext(), vt);
-    }
-
-    return total_regs > 1;
-    // return ty->isStructTy() || ty->isArrayTy() || (ty->isIntegerTy() && ty->
+    return ty->isIntegerTy() && ty->getPrimitiveSizeInBits() > 32;
 }
 
-static bool arg_reg_block(unsigned &argnum, MVT &valty, MVT &locty,
-                          CCValAssign::LocInfo &loc, ISD::ArgFlagsTy &flags,
-                          CCState &cc) {
-    cc.getPendingLocs().push_back(
-        CCValAssign::getPending(argnum, valty, locty, loc));
+static bool alloc_reg_block(unsigned &argnum, MVT &valty, MVT &locty,
+                            CCValAssign::LocInfo &loc, ISD::ArgFlagsTy &flags,
+                            CCState &cc) {
+    const MCPhysReg reg32s[] = {PRU::r14, PRU::r15, PRU::r16, PRU::r17,
+                                PRU::r18, PRU::r19, PRU::r20, PRU::r21,
+                                PRU::r22, PRU::r23, PRU::r24, PRU::r25,
+                                PRU::r26, PRU::r27, PRU::r28, PRU::r29};
 
-    if (flags.isInConsecutiveRegsLast()) {
+    SmallVectorImpl<CCValAssign> &pending = cc.getPendingLocs();
+    pending.push_back(CCValAssign::getPending(argnum, valty, locty, loc));
+
+    if (!flags.isInConsecutiveRegsLast()) {
+        return true;
     }
 
-    return true;
+    unsigned total_bytes = 0;
+    for (const CCValAssign &p : pending) {
+        total_bytes += p.getLocVT().getStoreSize();
+    }
 
-    /*
-    auto prucc = static_cast<PRUCCState>(cc);
+    // clpru stores i64s to consecutive reg pairs (if available).
+    if (total_bytes == 8) {
+        unsigned firstreg = cc.AllocateRegBlock(reg32s, 2);
+        if (firstreg != 0) {
+            pending[0].convertToReg(firstreg);
+            pending[1].convertToReg(firstreg + 1);
+            cc.addLoc(pending[0]);
+            cc.addLoc(pending[1]);
 
-    if (prucc.enough_regs) {
-        static const SmallVector<MCPhysReg, 15> avail{
-            PRU::r14, PRU::r15, PRU::r16, PRU::r17, PRU::r18, PRU::r19,
-            PRU::r20, PRU::r21, PRU::r22, PRU::r23, PRU::r24, PRU::r25,
-            PRU::r26, PRU::r27, PRU::r28, PRU::r29};
-        unsigned firstreg = cc.getFirstUnallocated(avail);
-
-        if (firstreg == avail.size() || firstreg == PRU::r29) {
-            prucc.enough_regs = false;
-            return false; // signal that we can't alloc to reg
+            pending.clear();
+            return true;
         }
-        */
-    return false;
-    // c.AllocateReg(avail[firstreg]);
+    }
+
+    // assign to stack
+    for (CCValAssign &arg : pending) {
+        arg.convertToMem(cc.AllocateStack(arg.getLocVT().getStoreSize(), 1));
+        cc.addLoc(arg);
+    }
+    pending.clear();
+
+    return true;
 }
 
 #include "callingconv.inc"
