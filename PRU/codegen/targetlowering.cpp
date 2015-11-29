@@ -265,7 +265,9 @@ SDValue PRUTargetLowering::LowerFormalArguments(
     }
     dump_assigns(args);
 
-    for (CCValAssign &arg : args) {
+    for (unsigned i = 0; i < args.size(); ++i) {
+        CCValAssign &arg = args[i];
+
         if (arg.isRegLoc()) {
             EVT vartype = arg.getLocVT();
             const TargetRegisterInfo &reginfo =
@@ -279,23 +281,30 @@ SDValue PRUTargetLowering::LowerFormalArguments(
             copy_node.dump();
 
             InVals.push_back(copy_node);
+        } else if (arg.isMemLoc() && Ins[i].Flags.isByVal()) {
+            unsigned argsize = Ins[i].Flags.getByValSize();
+            int frameidx =
+                MFI->CreateFixedObject(argsize, arg.getLocMemOffset(), true);
+            SDValue getframe =
+                DAG.getFrameIndex(frameidx, getPointerTy(DAG.getDataLayout()));
+            InVals.push_back(getframe);
 
+            dbgs() << "processed a byval loc of size " << argsize << ":\n";
+            getframe.dump();
         } else if (arg.isMemLoc()) {
             unsigned argsize = arg.getLocVT().getStoreSize();
             int frameidx =
                 MFI->CreateFixedObject(argsize, arg.getLocMemOffset(), true);
-
             SDValue getframe =
                 DAG.getFrameIndex(frameidx, getPointerTy(DAG.getDataLayout()));
             SDValue load_node =
                 DAG.getLoad(arg.getValVT(), dl, chain, getframe,
                             MachinePointerInfo(), false, false, false, 0);
 
-            dbgs() << "processed a mem loc:\n";
-            load_node.dump();
-
             InVals.push_back(load_node);
 
+            dbgs() << "processed a mem loc of size " << argsize << ":\n";
+            load_node.dump();
         } else {
             llvm_unreachable("while lowering arguments, encountered an arg "
                              "that was neither reg nor mem!\n");
