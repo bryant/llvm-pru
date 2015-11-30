@@ -148,13 +148,15 @@ dag pref opers = parens $ pref ++ " " ++ commasep opers
 
 reg = map Reg [8, 16, 32]
 
+imm = map Imm [8, 16, 32]
+
 r_r_r = [(d, l, r) | d <- reg, l <- reg, r <- reg]
 
-r_r_op n = r_r_r ++ [(d, l, Imm (mop_width l) n) | d <- reg, l <- reg]
+r_r_op n = r_r_r ++ [(d, l, r n) | d <- reg, l <- reg, r <- imm]
 
 r_r = [(d, l) | d <- reg, l <- reg]
 
-r_imm n = [(d, Imm (mop_width d) n) | d <- reg]
+r_imm n = [(d, i n) | d <- reg, i <- imm]
 
 r_op n = r_r ++ r_imm n
 
