@@ -424,11 +424,10 @@ SDValue PRUTargetLowering::LowerCall(CallLoweringInfo &call,
 // sdag builder implicitly switches to using sret if below returns false
 bool PRUTargetLowering::CanLowerReturn(
     CallingConv::ID cc, MachineFunction &f, bool vararg,
-    const SmallVectorImpl<ISD::OutputArg> &outs, LLVMContext &llmess) const {
+    const SmallVectorImpl<ISD::OutputArg> &outs, LLVMContext &ctx) const {
 
     SmallVector<CCValAssign, 16> tmp;
-    return CCState(cc, vararg, f, tmp, llmess)
-        .CheckReturn(outs, pru_return_conv);
+    return CCState(cc, vararg, f, tmp, ctx).CheckReturn(outs, pru_return_conv);
 }
 
 SDValue
