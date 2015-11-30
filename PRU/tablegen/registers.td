@@ -8,6 +8,9 @@ def sub_8_8 : SubRegIndex<8, 8>;
 def sub_16_0 : SubRegIndex<16>;
 def sub_16_16 : SubRegIndex<16, 16>;
 
+def sub_8_16 : ComposedSubRegIndex<sub_16_16, sub_8_0>;
+def sub_8_24 : ComposedSubRegIndex<sub_16_16, sub_8_8>;
+
 foreach reg = 0-31 in {
     foreach byte = 0-3 in {
         def r # reg # _b # byte : Reg<"r" # reg # ".b" # byte>;

@@ -179,9 +179,9 @@ to_sdty JumpTarg = BasicBlock
 -- update: turns out, llvm always combines into the second form. so this entire
 -- mess wasn't even necessary. keeping it, just in case.
 ext_or_trunc ext dwidth iwidths =
-    [(map (`ext_or_trunc_to` opw) iwidths, opw `ext_or_trunc_to` dwidth)
-        | opw <- dwidth : filter (> dwidth) iwidths]
+    [(map (`ext_or_trunc_to` opw) iwidths, opw `ext_or_trunc_to` dwidth)]
     where
+    opw = maximum $ dwidth : iwidths
     iwidth `ext_or_trunc_to` op_width
         | iwidth < op_width = CoerceTo op_width . ext
         | iwidth > op_width = CoerceTo op_width . Trunc
