@@ -20,7 +20,7 @@ using namespace llvm;
 #include "registerinfo.inc"
 
 // TODO: Provide proper call frame setup / destroy opcodes.
-PRURegisterInfo::PRURegisterInfo() : PRUGenRegisterInfo(PRU::r14) {}
+PRURegisterInfo::PRURegisterInfo() : PRUGenRegisterInfo(PRU::r3_w2) {}
 
 const MCPhysReg *
 PRURegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
