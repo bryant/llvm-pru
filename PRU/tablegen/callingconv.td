@@ -33,7 +33,12 @@ def pru_call_conv : CallingConv<[
 ]>;
 
 def pru_return_conv : CallingConv<[
-    CCIfType<[i1, i8, i16], CCPromoteToType<i32>>,
+    CCIfType<[i1], CCPromoteToType<i8>>,
+
+    CCIfType<[i8], CCAssignToReg<[r14_b0, r14_b1, r14_b2, r14_b3, r15_b0,
+                                  r15_b1, r15_b2, r15_b3]>>,
+    CCIfType<[i16], CCAssignToReg<[r14_w0, r14_w1, r14_w2, r15_w0, r15_w1,
+                                   r15_w2]>>,
     CCIfType<[i32], CCAssignToReg<[r14, r15]>>
 ]>;
 
