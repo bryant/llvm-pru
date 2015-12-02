@@ -60,7 +60,7 @@ static MCInstrInfo *createPRUMCInstrInfo() {
 
 static MCRegisterInfo *createPRUMCRegisterInfo(const Triple &TT) {
     MCRegisterInfo *X = new MCRegisterInfo();
-    InitPRUMCRegisterInfo(X, PRU::r14);
+    InitPRUMCRegisterInfo(X, PRU::r3_w2);
     return X;
 }
 
