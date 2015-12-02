@@ -24,6 +24,10 @@ class PRUTargetMachine : public LLVMTargetMachine {
     TargetLoweringObjectFile *getObjFileLowering() const override {
         return TLOF.get();
     }
+
+    const DataLayout &getDataLayout() const {
+        return LLVMTargetMachine::getDataLayout();
+    }
 };
 }
 
