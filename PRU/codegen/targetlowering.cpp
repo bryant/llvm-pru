@@ -172,17 +172,56 @@ SDValue PRUTargetLowering::LowerOperation(SDValue op, SelectionDAG &dag) const {
 
 bool PRUTargetLowering::functionArgumentNeedsConsecutiveRegisters(
     Type *ty, CallingConv::ID cc, bool) const {
-    return ty->isIntegerTy() && ty->getPrimitiveSizeInBits() > 32;
+    const auto &dl =
+        reinterpret_cast<const PRUTargetMachine *>(&getTargetMachine())
+            ->getDataLayout();
+    return ty->isStructTy() || ty->isArrayTy() || dl.getTypeSizeInBits(ty) > 32;
 }
+
+class PruCCState : public CCState {
+  public:
+    PruCCState(const TargetRegisterInfo &r, CallingConv::ID conv, bool vararg,
+               MachineFunction &f, SmallVectorImpl<CCValAssign> &locs,
+               LLVMContext &ctx)
+        : CCState(conv, vararg, f, locs, ctx), reginfo(r) {}
+    const TargetRegisterInfo &reginfo;
+};
+
+const MCPhysReg reg8s[] = {
+    PRU::r14_b0, PRU::r14_b1, PRU::r14_b2, PRU::r14_b3, PRU::r15_b0,
+    PRU::r15_b1, PRU::r15_b2, PRU::r15_b3, PRU::r16_b0, PRU::r16_b1,
+    PRU::r16_b2, PRU::r16_b3, PRU::r17_b0, PRU::r17_b1, PRU::r17_b2,
+    PRU::r17_b3, PRU::r18_b0, PRU::r18_b1, PRU::r18_b2, PRU::r18_b3,
+    PRU::r19_b0, PRU::r19_b1, PRU::r19_b2, PRU::r19_b3, PRU::r20_b0,
+    PRU::r20_b1, PRU::r20_b2, PRU::r20_b3, PRU::r21_b0, PRU::r21_b1,
+    PRU::r21_b2, PRU::r21_b3, PRU::r22_b0, PRU::r22_b1, PRU::r22_b2,
+    PRU::r22_b3, PRU::r23_b0, PRU::r23_b1, PRU::r23_b2, PRU::r23_b3,
+    PRU::r24_b0, PRU::r24_b1, PRU::r24_b2, PRU::r24_b3, PRU::r25_b0,
+    PRU::r25_b1, PRU::r25_b2, PRU::r25_b3, PRU::r26_b0, PRU::r26_b1,
+    PRU::r26_b2, PRU::r26_b3, PRU::r27_b0, PRU::r27_b1, PRU::r27_b2,
+    PRU::r27_b3, PRU::r28_b0, PRU::r28_b1, PRU::r28_b2, PRU::r28_b3,
+    PRU::r29_b0, PRU::r29_b1, PRU::r29_b2, PRU::r29_b3};
+
+const MCPhysReg reg16s[] = {
+    PRU::r14_w0, PRU::r14_w1, PRU::r14_w2, PRU::r15_w0, PRU::r15_w1,
+    PRU::r15_w2, PRU::r16_w0, PRU::r16_w1, PRU::r16_w2, PRU::r17_w0,
+    PRU::r17_w1, PRU::r17_w2, PRU::r18_w0, PRU::r18_w1, PRU::r18_w2,
+    PRU::r19_w0, PRU::r19_w1, PRU::r19_w2, PRU::r20_w0, PRU::r20_w1,
+    PRU::r20_w2, PRU::r21_w0, PRU::r21_w1, PRU::r21_w2, PRU::r22_w0,
+    PRU::r22_w1, PRU::r22_w2, PRU::r23_w0, PRU::r23_w1, PRU::r23_w2,
+    PRU::r24_w0, PRU::r24_w1, PRU::r24_w2, PRU::r25_w0, PRU::r25_w1,
+    PRU::r25_w2, PRU::r26_w0, PRU::r26_w1, PRU::r26_w2, PRU::r27_w0,
+    PRU::r27_w1, PRU::r27_w2, PRU::r28_w0, PRU::r28_w1, PRU::r28_w2,
+    PRU::r29_w0, PRU::r29_w1, PRU::r29_w2};
+
+const MCPhysReg reg32s[] = {PRU::r14, PRU::r15, PRU::r16, PRU::r17,
+                            PRU::r18, PRU::r19, PRU::r20, PRU::r21,
+                            PRU::r22, PRU::r23, PRU::r24, PRU::r25,
+                            PRU::r26, PRU::r27, PRU::r28, PRU::r29};
 
 static bool alloc_reg_block(unsigned &argnum, MVT &valty, MVT &locty,
                             CCValAssign::LocInfo &loc, ISD::ArgFlagsTy &flags,
                             CCState &cc) {
-    const MCPhysReg reg32s[] = {PRU::r14, PRU::r15, PRU::r16, PRU::r17,
-                                PRU::r18, PRU::r19, PRU::r20, PRU::r21,
-                                PRU::r22, PRU::r23, PRU::r24, PRU::r25,
-                                PRU::r26, PRU::r27, PRU::r28, PRU::r29};
-
     SmallVectorImpl<CCValAssign> &pending = cc.getPendingLocs();
     pending.push_back(CCValAssign::getPending(argnum, valty, locty, loc));
 
@@ -195,19 +234,76 @@ static bool alloc_reg_block(unsigned &argnum, MVT &valty, MVT &locty,
         total_bytes += p.getLocVT().getStoreSize();
     }
 
-    // clpru stores i64s to consecutive reg pairs (if available).
-    if (total_bytes == 8) {
-        unsigned firstreg = cc.AllocateRegBlock(reg32s, 2);
-        if (firstreg != 0) {
-            assert(pending.size() == 2 &&
-                   "should only have gotten here via an i64 arg");
-            pending[0].convertToReg(firstreg);
-            pending[1].convertToReg(firstreg + 1);
-            cc.addLoc(pending[0]);
-            cc.addLoc(pending[1]);
+    const auto &reginfo = reinterpret_cast<PruCCState *>(&cc)->reginfo;
 
-            pending.clear();
-            return true;
+    auto get_subreg_at = [&](unsigned offset, unsigned reg, MVT vt) {
+        for (unsigned idx = 1; idx < reginfo.getNumSubRegIndices(); ++idx) {
+            unsigned sub = reginfo.getSubReg(reg, idx);
+            if (sub == 0) {
+                return 0u;
+            } else {
+                dbgs() << "testing " << reginfo.getName(sub) << ": "
+                       << reginfo.getSubRegIdxOffset(idx) << " "
+                       << reginfo.getSubRegIdxSize(idx) << "\n";
+                if (reginfo.getSubRegIdxOffset(idx) == offset &&
+                    reginfo.getSubRegIdxSize(idx) == vt.getSizeInBits()) {
+                    return sub;
+                }
+            }
+        }
+        return 0u;
+    };
+
+    auto assign = [&](unsigned reg, SmallVectorImpl<CCValAssign> &locs) {
+        dbgs() << "getting subregs for " << reginfo.getName(reg) << "\n";
+        unsigned offset = 0;
+        for (CCValAssign &p : pending) {
+            unsigned subreg = get_subreg_at(offset, reg, p.getLocVT());
+            if (subreg == 0) {
+                dbgs() << "couldn't find a subreg\n";
+                cc.addLoc(CCValAssign::getCustomReg(p.getValNo(), p.getValVT(),
+                                                    reg, p.getLocVT(),
+                                                    p.getLocInfo()));
+            } else {
+                dbgs() << "found a subreg! " << reginfo.getName(subreg) << "\n";
+                p.convertToReg(subreg);
+                cc.addLoc(p);
+            }
+            offset += p.getLocVT().getSizeInBits();
+            if (offset >= 32) {
+                offset -= 32;
+                reg += 1;
+            }
+        }
+
+    };
+
+    if (total_bytes == 1) {
+        unsigned reg = cc.AllocateReg(reg8s);
+        if (reg != 0) {
+            pending[0].convertToReg(reg);
+            cc.addLoc(pending[0]);
+            goto fin;
+        }
+    } else if (total_bytes == 2) {
+        unsigned reg = cc.AllocateReg(reg16s);
+        if (reg != 0) {
+            assign(reg, pending);
+            goto fin;
+        }
+    } else if (total_bytes <= 4) {
+        // TODO: last slot in case 3 is supposed to be free for other args
+        unsigned reg = cc.AllocateReg(reg32s);
+        if (reg != 0) {
+            assign(reg, pending);
+            goto fin;
+        }
+    } else if (total_bytes == 8) {
+        // clpru stores i64s to consecutive reg pairs (if available).
+        unsigned reg = cc.AllocateRegBlock(reg32s, 2);
+        if (reg != 0) {
+            assign(reg, pending);
+            goto fin;
         }
     }
 
@@ -253,10 +349,9 @@ SDValue PRUTargetLowering::LowerFormalArguments(
     MachineFunction &MF = DAG.getMachineFunction();
     MachineFrameInfo *MFI = MF.getFrameInfo();
 
-    // Assign locations to all of the incoming arguments.
     SmallVector<CCValAssign, 16> args;
-    CCState CCInfo(conv, vararg, DAG.getMachineFunction(), args,
-                   *DAG.getContext());
+    PruCCState CCInfo(*MF.getSubtarget().getRegisterInfo(), conv, vararg,
+                      DAG.getMachineFunction(), args, *DAG.getContext());
     CCInfo.AnalyzeFormalArguments(Ins, pru_call_conv);
     for (unsigned n = 0; n < Ins.size(); ++n) {
         dbgs() << "arg " << n << " " << Ins[n].Flags.isSplit() << " "
