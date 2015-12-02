@@ -279,29 +279,25 @@ static bool alloc_reg_block(unsigned &argnum, MVT &valty, MVT &locty,
     };
 
     if (total_bytes == 1) {
-        unsigned reg = cc.AllocateReg(reg8s);
-        if (reg != 0) {
+        if (unsigned reg = cc.AllocateReg(reg8s)) {
             pending[0].convertToReg(reg);
             cc.addLoc(pending[0]);
             goto fin;
         }
     } else if (total_bytes == 2) {
-        unsigned reg = cc.AllocateReg(reg16s);
-        if (reg != 0) {
+        if (unsigned reg = cc.AllocateReg(reg16s)) {
             assign(reg, pending);
             goto fin;
         }
     } else if (total_bytes <= 4) {
         // TODO: last slot in case 3 is supposed to be free for other args
-        unsigned reg = cc.AllocateReg(reg32s);
-        if (reg != 0) {
+        if (unsigned reg = cc.AllocateReg(reg32s)) {
             assign(reg, pending);
             goto fin;
         }
     } else if (total_bytes == 8) {
         // clpru stores i64s to consecutive reg pairs (if available).
-        unsigned reg = cc.AllocateRegBlock(reg32s, 2);
-        if (reg != 0) {
+        if (unsigned reg = cc.AllocateRegBlock(reg32s, 2)) {
             assign(reg, pending);
             goto fin;
         }
@@ -312,8 +308,8 @@ static bool alloc_reg_block(unsigned &argnum, MVT &valty, MVT &locty,
         arg.convertToMem(cc.AllocateStack(arg.getLocVT().getStoreSize(), 1));
         cc.addLoc(arg);
     }
+fin:
     pending.clear();
-
     return true;
 }
 
