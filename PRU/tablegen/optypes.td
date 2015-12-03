@@ -18,6 +18,9 @@ def addr : Operand<iPTR>, ComplexPattern<iPTR, 2, "SelectAddress"> {
     let PrintMethod = "print_addr";
 }
 
+def build_pair : SDNode<"ISD::BUILD_PAIR",
+    SDTypeProfile<1, 2, [SDTCisInt<0>, SDTCisInt<1>, SDTCisSameAs<1, 2>]>>;
+
 def retflag : SDNode<"PRUISD::RET_FLAG", SDTNone,
                      [SDNPHasChain, SDNPOptInGlue, SDNPVariadic]>;
 

@@ -180,49 +180,61 @@ bool PRUTargetLowering::functionArgumentNeedsConsecutiveRegisters(
 
 class PruCCState : public CCState {
   public:
-    PruCCState(const TargetRegisterInfo &r, CallingConv::ID conv, bool vararg,
+    const PRURegisterInfo &reginfo;
+    std::map<unsigned, std::vector<unsigned>> frags;
+
+    PruCCState(const PRURegisterInfo &r, CallingConv::ID conv, bool vararg,
                MachineFunction &f, SmallVectorImpl<CCValAssign> &locs,
                LLVMContext &ctx)
-        : CCState(conv, vararg, f, locs, ctx), reginfo(r) {}
-    const TargetRegisterInfo &reginfo;
+        : CCState(conv, vararg, f, locs, ctx), reginfo(r), frags() {}
+
+    void assign_locs_within(unsigned reg, SmallVectorImpl<CCValAssign> &locs) {
+        dbgs() << "assigning to parent " << reginfo.getName(reg) << "\n";
+
+        unsigned offset = 0;
+        auto inc_offset = [](unsigned &off, unsigned bits, unsigned &parentreg,
+                             const PRURegisterInfo &r) {
+            off += bits;
+            if (off >= r.reg_size(parentreg)) {
+                off -= r.reg_size(parentreg);
+                parentreg += 1;
+            }
+        };
+
+        for (CCValAssign &p : getPendingLocs()) {
+            unsigned bits = p.getLocVT().getSizeInBits();
+            unsigned subreg = reginfo.find_subreg_in(reg, offset, bits);
+
+            if (subreg == 0) {
+                dbgs() << "couldn't find a subreg\n";
+                // chomp byte-by-byte
+                for (unsigned left = bits; left > 0; left -= 8) {
+                    unsigned subreg = reginfo.find_subreg_in(reg, offset, 8);
+                    dbgs() << "collecting bytesub @ " << offset << " of reg "
+                           << reginfo.getName(reg) << ": ";
+                    assert(subreg && "expected free subreg");
+                    dbgs() << reginfo.getName(subreg) << "\n";
+
+                    frags[p.getValNo()].push_back(subreg);
+                    inc_offset(offset, 8, reg, reginfo);
+                }
+                addLoc(CCValAssign::getCustomReg(p.getValNo(), p.getValVT(),
+                                                 frags[p.getValNo()][0],
+                                                 p.getLocVT(), p.getLocInfo()));
+            } else {
+                dbgs() << "found a subreg! " << reginfo.getName(subreg) << "\n";
+                p.convertToReg(subreg);
+                addLoc(p);
+                inc_offset(offset, bits, reg, reginfo);
+            }
+        }
+    }
 };
-
-const MCPhysReg reg8s[] = {
-    PRU::r14_b0, PRU::r14_b1, PRU::r14_b2, PRU::r14_b3, PRU::r15_b0,
-    PRU::r15_b1, PRU::r15_b2, PRU::r15_b3, PRU::r16_b0, PRU::r16_b1,
-    PRU::r16_b2, PRU::r16_b3, PRU::r17_b0, PRU::r17_b1, PRU::r17_b2,
-    PRU::r17_b3, PRU::r18_b0, PRU::r18_b1, PRU::r18_b2, PRU::r18_b3,
-    PRU::r19_b0, PRU::r19_b1, PRU::r19_b2, PRU::r19_b3, PRU::r20_b0,
-    PRU::r20_b1, PRU::r20_b2, PRU::r20_b3, PRU::r21_b0, PRU::r21_b1,
-    PRU::r21_b2, PRU::r21_b3, PRU::r22_b0, PRU::r22_b1, PRU::r22_b2,
-    PRU::r22_b3, PRU::r23_b0, PRU::r23_b1, PRU::r23_b2, PRU::r23_b3,
-    PRU::r24_b0, PRU::r24_b1, PRU::r24_b2, PRU::r24_b3, PRU::r25_b0,
-    PRU::r25_b1, PRU::r25_b2, PRU::r25_b3, PRU::r26_b0, PRU::r26_b1,
-    PRU::r26_b2, PRU::r26_b3, PRU::r27_b0, PRU::r27_b1, PRU::r27_b2,
-    PRU::r27_b3, PRU::r28_b0, PRU::r28_b1, PRU::r28_b2, PRU::r28_b3,
-    PRU::r29_b0, PRU::r29_b1, PRU::r29_b2, PRU::r29_b3};
-
-const MCPhysReg reg16s[] = {
-    PRU::r14_w0, PRU::r14_w1, PRU::r14_w2, PRU::r15_w0, PRU::r15_w1,
-    PRU::r15_w2, PRU::r16_w0, PRU::r16_w1, PRU::r16_w2, PRU::r17_w0,
-    PRU::r17_w1, PRU::r17_w2, PRU::r18_w0, PRU::r18_w1, PRU::r18_w2,
-    PRU::r19_w0, PRU::r19_w1, PRU::r19_w2, PRU::r20_w0, PRU::r20_w1,
-    PRU::r20_w2, PRU::r21_w0, PRU::r21_w1, PRU::r21_w2, PRU::r22_w0,
-    PRU::r22_w1, PRU::r22_w2, PRU::r23_w0, PRU::r23_w1, PRU::r23_w2,
-    PRU::r24_w0, PRU::r24_w1, PRU::r24_w2, PRU::r25_w0, PRU::r25_w1,
-    PRU::r25_w2, PRU::r26_w0, PRU::r26_w1, PRU::r26_w2, PRU::r27_w0,
-    PRU::r27_w1, PRU::r27_w2, PRU::r28_w0, PRU::r28_w1, PRU::r28_w2,
-    PRU::r29_w0, PRU::r29_w1, PRU::r29_w2};
-
-const MCPhysReg reg32s[] = {PRU::r14, PRU::r15, PRU::r16, PRU::r17,
-                            PRU::r18, PRU::r19, PRU::r20, PRU::r21,
-                            PRU::r22, PRU::r23, PRU::r24, PRU::r25,
-                            PRU::r26, PRU::r27, PRU::r28, PRU::r29};
 
 static bool alloc_reg_block(unsigned &argnum, MVT &valty, MVT &locty,
                             CCValAssign::LocInfo &loc, ISD::ArgFlagsTy &flags,
-                            CCState &cc) {
-    SmallVectorImpl<CCValAssign> &pending = cc.getPendingLocs();
+                            CCState &cc_) {
+    SmallVectorImpl<CCValAssign> &pending = cc_.getPendingLocs();
     pending.push_back(CCValAssign::getPending(argnum, valty, locty, loc));
 
     if (!flags.isInConsecutiveRegsLast()) {
@@ -234,71 +246,29 @@ static bool alloc_reg_block(unsigned &argnum, MVT &valty, MVT &locty,
         total_bytes += p.getLocVT().getStoreSize();
     }
 
-    const auto &reginfo = reinterpret_cast<PruCCState *>(&cc)->reginfo;
-
-    auto get_subreg_at = [&](unsigned offset, unsigned reg, MVT vt) {
-        for (unsigned idx = 1; idx < reginfo.getNumSubRegIndices(); ++idx) {
-            unsigned sub = reginfo.getSubReg(reg, idx);
-            if (sub == 0) {
-                return 0u;
-            } else {
-                dbgs() << "testing " << reginfo.getName(sub) << ": "
-                       << reginfo.getSubRegIdxOffset(idx) << " "
-                       << reginfo.getSubRegIdxSize(idx) << "\n";
-                if (reginfo.getSubRegIdxOffset(idx) == offset &&
-                    reginfo.getSubRegIdxSize(idx) == vt.getSizeInBits()) {
-                    return sub;
-                }
-            }
-        }
-        return 0u;
-    };
-
-    auto assign = [&](unsigned reg, SmallVectorImpl<CCValAssign> &locs) {
-        dbgs() << "getting subregs for " << reginfo.getName(reg) << "\n";
-        unsigned offset = 0;
-        for (CCValAssign &p : pending) {
-            unsigned subreg = get_subreg_at(offset, reg, p.getLocVT());
-            if (subreg == 0) {
-                dbgs() << "couldn't find a subreg\n";
-                cc.addLoc(CCValAssign::getCustomReg(p.getValNo(), p.getValVT(),
-                                                    reg, p.getLocVT(),
-                                                    p.getLocInfo()));
-            } else {
-                dbgs() << "found a subreg! " << reginfo.getName(subreg) << "\n";
-                p.convertToReg(subreg);
-                cc.addLoc(p);
-            }
-            offset += p.getLocVT().getSizeInBits();
-            if (offset >= 32) {
-                offset -= 32;
-                reg += 1;
-            }
-        }
-
-    };
+    PruCCState &cc = *reinterpret_cast<PruCCState *>(&cc_);
 
     if (total_bytes == 1) {
-        if (unsigned reg = cc.AllocateReg(reg8s)) {
+        if (unsigned reg = cc.AllocateReg(cc.reginfo.i8_arg_regs())) {
             pending[0].convertToReg(reg);
             cc.addLoc(pending[0]);
             goto fin;
         }
     } else if (total_bytes == 2) {
-        if (unsigned reg = cc.AllocateReg(reg16s)) {
-            assign(reg, pending);
+        if (unsigned reg = cc.AllocateReg(cc.reginfo.i16_arg_regs())) {
+            cc.assign_locs_within(reg, pending);
             goto fin;
         }
     } else if (total_bytes <= 4) {
         // TODO: last slot in case 3 is supposed to be free for other args
-        if (unsigned reg = cc.AllocateReg(reg32s)) {
-            assign(reg, pending);
+        if (unsigned reg = cc.AllocateReg(cc.reginfo.i32_arg_regs())) {
+            cc.assign_locs_within(reg, pending);
             goto fin;
         }
     } else if (total_bytes == 8) {
         // clpru stores i64s to consecutive reg pairs (if available).
-        if (unsigned reg = cc.AllocateRegBlock(reg32s, 2)) {
-            assign(reg, pending);
+        if (unsigned reg = cc.AllocateRegBlock(cc.reginfo.i32_arg_regs(), 2)) {
+            cc.assign_locs_within(reg, pending);
             goto fin;
         }
     }
@@ -346,8 +316,10 @@ SDValue PRUTargetLowering::LowerFormalArguments(
     MachineFrameInfo *MFI = MF.getFrameInfo();
 
     SmallVector<CCValAssign, 16> args;
-    PruCCState CCInfo(*MF.getSubtarget().getRegisterInfo(), conv, vararg,
-                      DAG.getMachineFunction(), args, *DAG.getContext());
+    PruCCState CCInfo(*reinterpret_cast<const PRURegisterInfo *>(
+                          MF.getSubtarget().getRegisterInfo()),
+                      conv, vararg, DAG.getMachineFunction(), args,
+                      *DAG.getContext());
     CCInfo.AnalyzeFormalArguments(Ins, pru_call_conv);
     for (unsigned n = 0; n < Ins.size(); ++n) {
         dbgs() << "arg " << n << " " << Ins[n].Flags.isSplit() << " "
@@ -356,22 +328,52 @@ SDValue PRUTargetLowering::LowerFormalArguments(
     }
     dump_assigns(args);
 
+    auto attach_to_regs = [&](unsigned reg, MVT vt) {
+        const TargetRegisterClass *regcls =
+            MF.getSubtarget().getRegisterInfo()->getMinimalPhysRegClass(
+                reg, vt.SimpleTy);
+        unsigned virtreg = MF.addLiveIn(reg, regcls);
+        return DAG.getCopyFromReg(chain, dl, virtreg, vt);
+    };
+
+    using std::vector;
+    using PairBuilderFn =
+        std::function<SDValue(unsigned, unsigned, vector<SDValue> &)>;
+
+    PairBuilderFn copy_parts_rec = [&](unsigned s, unsigned e,
+                                       vector<SDValue> &ps) {
+        assert((ps.size() & (ps.size() - 1)) == 0);
+        EVT vt = EVT::getIntegerVT(*DAG.getContext(), (e - s) * 8);
+        SDValue low, high;
+        dbgs() << "copy_parts_rec: (" << s << ", " << e << ")\n";
+        if (e - s > 2) {
+            unsigned m = (e - s) / 2;
+            low = copy_parts_rec(s, m, ps);
+            high = copy_parts_rec(m, e, ps);
+        } else {
+            low = ps[s];
+            high = ps[s + 1];
+        }
+        return DAG.getNode(ISD::BUILD_PAIR, dl, vt, low, high);
+    };
+
     for (unsigned i = 0; i < args.size(); ++i) {
         CCValAssign &arg = args[i];
 
-        if (arg.isRegLoc()) {
-            EVT vartype = arg.getLocVT();
-            const TargetRegisterInfo &reginfo =
-                *MF.getSubtarget().getRegisterInfo();
-            const TargetRegisterClass *regcls = reginfo.getMinimalPhysRegClass(
-                arg.getLocReg(), vartype.getSimpleVT().SimpleTy);
-            unsigned virtreg = MF.addLiveIn(arg.getLocReg(), regcls);
-            SDValue copy_node = DAG.getCopyFromReg(chain, dl, virtreg, vartype);
+        if (arg.isRegLoc() && !arg.needsCustom()) {
+            SDValue copy_node = attach_to_regs(arg.getLocReg(), arg.getLocVT());
 
             dbgs() << "processed a reg loc:\n";
             copy_node.dump();
 
             InVals.push_back(copy_node);
+        } else if (arg.isRegLoc() && arg.needsCustom()) {
+            vector<unsigned> &bs = CCInfo.frags[arg.getValNo()];
+            vector<SDValue> ps;
+            for (auto b = bs.begin(); b != bs.end(); ++b) {
+                ps.push_back(attach_to_regs(*b, MVT::getIntegerVT(8)));
+            }
+            InVals.push_back(copy_parts_rec(0, ps.size(), ps));
         } else if (arg.isMemLoc() && Ins[i].Flags.isByVal()) {
             unsigned argsize = Ins[i].Flags.getByValSize();
             int frameidx =
