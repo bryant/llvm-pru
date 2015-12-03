@@ -29,8 +29,10 @@ gen_fn structname mems = decl ++ stmts ++ " return s; }\n"
     stmts = concat ["s.p" ++ show n ++ " += " ++ show (n + 1) ++ "; "
                    | n <- [0..length mems - 1]]
 
-structs = unlines . zipWith mkstruct [0..] $ concatMap struct_of_size [1..9]
+structs = unlines . (prelude ++ )
+                  . zipWith mkstruct [0..] $ concatMap struct_of_size [1..9]
     where
     mkstruct idx mems =
         concat ["typedef struct ", gen_members mems, " S", show idx, ";\n"] ++
         "\n" ++ gen_fn ("S" ++ show idx) mems
+    prelude = ["#pragma pack(1)"]
