@@ -26,6 +26,15 @@ struct PRURegisterInfo : public PRUGenRegisterInfo {
 
     // Debug information queries.
     unsigned getFrameRegister(const MachineFunction &MF) const override;
-};
 
+    unsigned reg_size(unsigned regnum) const;
+
+    unsigned find_subreg_in(unsigned reg, unsigned offset, unsigned bits) const;
+
+    const std::vector<MCPhysReg> i8_arg_regs() const;
+
+    const std::vector<MCPhysReg> i16_arg_regs() const;
+
+    const std::vector<MCPhysReg> i32_arg_regs() const;
+};
 } // end namespace llvm

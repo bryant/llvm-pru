@@ -78,3 +78,50 @@ unsigned PRURegisterInfo::getFrameRegister(const MachineFunction &MF) const {
     const PRUFrameLowering *TFI = getFrameLowering(MF);
     return TFI->hasFP(MF) ? PRU::r4 : PRU::r2;
 }
+
+unsigned PRURegisterInfo::reg_size(unsigned regnum) const {
+    for (auto cls = regclass_begin(); cls != regclass_end(); ++cls) {
+        if ((*cls)->contains(regnum)) {
+            return (*cls)->getSize() * 8;
+        }
+    }
+    llvm_unreachable("invalid register!");
+}
+
+unsigned PRURegisterInfo::find_subreg_in(unsigned reg, unsigned offset,
+                                         unsigned bits) const {
+    if (reg_size(reg) == bits && offset == 0) {
+        return reg;
+    }
+    for (MCSubRegIndexIterator idx(reg, this); idx.isValid(); ++idx) {
+        unsigned sub = idx.getSubReg(), i = idx.getSubRegIndex();
+        if (sub != 0) {
+            if (getSubRegIdxSize(i) == bits &&
+                getSubRegIdxOffset(i) == offset) {
+                return sub;
+            }
+        }
+    }
+    return 0;
+}
+
+const std::vector<MCPhysReg> PRURegisterInfo::i8_arg_regs() const {
+    size_t len = sizeof(i8_args_SaveList) / sizeof(MCPhysReg);
+    static const std::vector<MCPhysReg> rv(i8_args_SaveList,
+                                           i8_args_SaveList + len);
+    return rv;
+}
+
+const std::vector<MCPhysReg> PRURegisterInfo::i16_arg_regs() const {
+    size_t len = sizeof(i16_args_SaveList) / sizeof(MCPhysReg);
+    static const std::vector<MCPhysReg> rv(i16_args_SaveList,
+                                           i16_args_SaveList + len);
+    return rv;
+}
+
+const std::vector<MCPhysReg> PRURegisterInfo::i32_arg_regs() const {
+    size_t len = sizeof(i32_args_SaveList) / sizeof(MCPhysReg);
+    static const std::vector<MCPhysReg> rv(i32_args_SaveList,
+                                           i32_args_SaveList + len);
+    return rv;
+}
