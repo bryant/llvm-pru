@@ -14,7 +14,9 @@ include "tablegen/miscinstrs.td"
 }
 
 include "generated/patterns.td"
+let AddedComplexity = 4000 in {
 include "tablegen/miscpatterns.td"
+}
 
 include "tablegen/callingconv.td"
 
