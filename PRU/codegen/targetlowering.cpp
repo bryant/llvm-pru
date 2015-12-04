@@ -170,6 +170,21 @@ class PruCCState : public CCState {
             }
         }
     }
+
+    void analyze_return(const SmallVectorImpl<ISD::OutputArg> &outgoing) {
+        SmallVector<CCValAssign, 8> pending;
+        unsigned total_bytes = 0;
+
+        for (unsigned n = 0; n < outgoing.size(); ++n) {
+            const auto &out = outgoing[n];
+            pending.push_back(
+                CCValAssign::getPending(n, out.VT, out.VT, CCValAssign::Full));
+            total_bytes += out.VT.getStoreSize();
+        }
+        // if ret size were > 8, llvm should have given us an sret pointer
+        assert(total_bytes <= 8);
+        assign_locs_within(PRU::r14, pending);
+    }
 };
 
 static bool alloc_reg_block(unsigned &argnum, MVT &valty, MVT &locty,
@@ -459,9 +474,16 @@ SDValue PRUTargetLowering::LowerCall(CallLoweringInfo &call,
 bool PRUTargetLowering::CanLowerReturn(
     CallingConv::ID cc, MachineFunction &f, bool vararg,
     const SmallVectorImpl<ISD::OutputArg> &outs, LLVMContext &ctx) const {
-
-    SmallVector<CCValAssign, 16> tmp;
-    return CCState(cc, vararg, f, tmp, ctx).CheckReturn(outs, pru_return_conv);
+    unsigned total_bytes = 0;
+    for (const auto &out : outs) {
+        total_bytes += out.VT.getStoreSize();
+    }
+    if (total_bytes <= 4 || total_bytes == 8) {
+        return true;
+    } else {
+        // instruct llvm to use sret
+        return false;
+    }
 }
 
 SDValue
@@ -471,25 +493,63 @@ PRUTargetLowering::LowerReturn(SDValue ch, CallingConv::ID cc, bool vararg,
                                SDLoc dl, SelectionDAG &sdag) const {
 
     SmallVector<CCValAssign, 16> locs;
-    CCState CCInfo(cc, vararg, sdag.getMachineFunction(), locs,
-                   *sdag.getContext());
-    CCInfo.AnalyzeReturn(outs, pru_return_conv);
+    auto reginfo = reinterpret_cast<const PRURegisterInfo *>(
+        sdag.getSubtarget().getRegisterInfo());
+    PruCCState CCInfo(*reginfo, cc, vararg, sdag.getMachineFunction(), locs,
+                      *sdag.getContext());
+    CCInfo.analyze_return(outs);
+
+    if (locs.size() == 0) {
+        return sdag.getNode(PRUISD::RET_FLAG, dl, MVT::Other, {ch});
+    }
+
+    using I8SplitterFn =
+        std::function<void(SmallVector<SDValue, 4> &, SDValue, unsigned)>;
+
+    I8SplitterFn extract_i8s = [&](SmallVector<SDValue, 4> &i8s, SDValue reg,
+                                   unsigned width) {
+        if (width == 8) {
+            i8s.push_back(reg);
+        } else {
+            MVT vt = MVT::getIntegerVT(width / 2);
+            SDValue low = sdag.getNode(ISD::EXTRACT_ELEMENT, dl, vt, reg,
+                                       sdag.getIntPtrConstant(0, dl));
+            SDValue high = sdag.getNode(ISD::EXTRACT_ELEMENT, dl, vt, reg,
+                                        sdag.getIntPtrConstant(1, dl));
+            dbgs() << "pushing low " << width / 2 << "\n";
+            extract_i8s(i8s, low, width / 2);
+            dbgs() << "pushing high " << width / 2 << "\n";
+            extract_i8s(i8s, high, width / 2);
+        }
+    };
 
     SmallVector<SDValue, 4> operands;
     SDValue glue;
 
-    if (locs.size() > 0) {
-        for (unsigned n = 0; n < locs.size(); ++n) {
-            auto loc = locs[n];
-            assert(loc.isRegLoc());
-            ch = sdag.getCopyToReg(ch, dl, loc.getLocReg(), outvals[n], glue);
-            glue = ch.getValue(1);
-            operands.push_back(
-                sdag.getRegister(loc.getLocReg(), loc.getLocVT()));
+    auto copy_to_reg = [&](unsigned reg, SDValue val, MVT vt) {
+        ch = sdag.getCopyToReg(ch, dl, reg, val, glue);
+        glue = ch.getValue(1);
+        operands.push_back(sdag.getRegister(reg, vt));
+    };
+
+    for (unsigned n = 0; n < locs.size(); ++n) {
+        CCValAssign &loc = locs[n];
+        assert(loc.isRegLoc());
+        if (loc.needsCustom()) {
+            SmallVector<SDValue, 4> i8s;
+            extract_i8s(i8s, outvals[n], loc.getValVT().getSizeInBits());
+            dbgs() << "#" << loc.getValNo() << ": extracted " << i8s.size()
+                   << " pieces, corresponding to "
+                   << CCInfo.frags[loc.getValNo()].size() << " i8 frags\n";
+            for (unsigned i = 0; i < i8s.size(); ++i) {
+                copy_to_reg(CCInfo.frags[loc.getValNo()][i], i8s[i], MVT::i8);
+            }
+        } else {
+            copy_to_reg(loc.getLocReg(), outvals[n], loc.getLocVT());
         }
-        operands.push_back(glue);
     }
 
+    operands.push_back(glue);
     operands.insert(operands.begin(), ch);
 
     return sdag.getNode(PRUISD::RET_FLAG, dl, MVT::Other, operands);
