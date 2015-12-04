@@ -27,20 +27,6 @@ using namespace llvm;
 
 #define DEBUG_TYPE "pru-lower"
 
-typedef enum { NoHWMult, HWMultIntr, HWMultNoIntr } HWMultUseMode;
-
-static cl::opt<HWMultUseMode> HWMultMode(
-    "pru-hwmult-mode", cl::Hidden, cl::desc("Hardware multiplier use mode"),
-    cl::init(HWMultNoIntr),
-    cl::values(
-        clEnumValN(NoHWMult, "no", "Do not use hardware multiplier"),
-        clEnumValN(HWMultIntr, "interrupts",
-                   "Assume hardware multiplier can be used inside interrupts"),
-        clEnumValN(
-            HWMultNoIntr, "use",
-            "Assume hardware multiplier cannot be used inside interrupts"),
-        clEnumValEnd));
-
 // TODO: figure out if isr procs need special handling
 
 PRUTargetLowering::PRUTargetLowering(const TargetMachine &targ,
@@ -69,20 +55,12 @@ PRUTargetLowering::PRUTargetLowering(const TargetMachine &targ,
         }
 
         // TODO: lowr sign extension. can be done with 'fill'
-        // setOperationAction(ISD::SIGN_EXTEND, valty, Custom);
     }
 
     // Provide all sorts of operation actions
 
     // Division is expensive
     // setIntDivIsCheap(false);
-
-    // We have post-incremented loads / stores.
-    // setIndexedLoadAction(ISD::POST_INC, MVT::i8, Legal);
-    // setIndexedLoadAction(ISD::POST_INC, MVT::i16, Legal);
-
-    // We don't have any truncstores
-    // setTruncStoreAction(MVT::i16, MVT::i8, Expand);
 
     // TODO: does brcond need to be expanded?
     // TODO: signed ops: cmp, alu
@@ -96,51 +74,14 @@ PRUTargetLowering::PRUTargetLowering(const TargetMachine &targ,
     // TODO: handle selectcc. handled.
     for (MVT valty : MVT::integer_valuetypes()) {
         setOperationAction(ISD::SELECT, valty, Expand);
-        // setOperationAction(ISD::SELECT_CC, valty, Expand);
     }
 
     setOperationAction(ISD::GlobalAddress, MVT::i32, Custom);
     setOperationAction(ISD::ExternalSymbol, MVT::i32, Custom);
     setOperationAction(ISD::BlockAddress, MVT::i32, Custom);
 
-    // setOperationAction(ISD::SIGN_EXTEND, MVT::i16, Expand);
-    // setOperationAction(ISD::DYNAMIC_STACKALLOC, MVT::i8, Expand);
-    // setOperationAction(ISD::DYNAMIC_STACKALLOC, MVT::i16, Expand);
-
     //// FIXME: Implement efficiently multiplication by a constant
-    // setOperationAction(ISD::MUL, MVT::i8, Expand);
-    // setOperationAction(ISD::MULHS, MVT::i8, Expand);
-    // setOperationAction(ISD::MULHU, MVT::i8, Expand);
-    // setOperationAction(ISD::SMUL_LOHI, MVT::i8, Expand);
-    // setOperationAction(ISD::UMUL_LOHI, MVT::i8, Expand);
-    // setOperationAction(ISD::MUL, MVT::i16, Expand);
-    // setOperationAction(ISD::MULHS, MVT::i16, Expand);
-    // setOperationAction(ISD::MULHU, MVT::i16, Expand);
-    // setOperationAction(ISD::SMUL_LOHI, MVT::i16, Expand);
-    // setOperationAction(ISD::UMUL_LOHI, MVT::i16, Expand);
-
-    // setOperationAction(ISD::UDIV, MVT::i8, Expand);
-    // setOperationAction(ISD::UDIVREM, MVT::i8, Expand);
-    // setOperationAction(ISD::UREM, MVT::i8, Expand);
-    // setOperationAction(ISD::SDIV, MVT::i8, Expand);
-    // setOperationAction(ISD::SDIVREM, MVT::i8, Expand);
-    // setOperationAction(ISD::SREM, MVT::i8, Expand);
-    // setOperationAction(ISD::UDIV, MVT::i16, Expand);
-    // setOperationAction(ISD::UDIVREM, MVT::i16, Expand);
-    // setOperationAction(ISD::UREM, MVT::i16, Expand);
-    // setOperationAction(ISD::SDIV, MVT::i16, Expand);
-    // setOperationAction(ISD::SDIVREM, MVT::i16, Expand);
-    // setOperationAction(ISD::SREM, MVT::i16, Expand);
-
-    //// varargs support
-    // setOperationAction(ISD::VASTART, MVT::Other, Expand);
-    // setOperationAction(ISD::VAARG, MVT::Other, Expand);
-    // setOperationAction(ISD::VAEND, MVT::Other, Expand);
-    // setOperationAction(ISD::VACOPY, MVT::Other, Expand);
-    // setOperationAction(ISD::JumpTable, MVT::i16, Expand);
-
-    // setTargetDAGCombine(ISD::ANY_EXTEND);
-    // setTargetDAGCombine(ISD::ZERO_EXTEND);
+    //// TODO: varargs support
 
     setMinFunctionAlignment(1);
     setPrefFunctionAlignment(1);
@@ -554,42 +495,6 @@ PRUTargetLowering::LowerReturn(SDValue ch, CallingConv::ID cc, bool vararg,
     return sdag.getNode(PRUISD::RET_FLAG, dl, MVT::Other, operands);
 }
 
-/*
-/// getPostIndexedAddressParts - returns true by value, base pointer and
-/// offset pointer and addressing mode by reference if this node can be
-/// combined with a load / store to form a post-indexed load / store.
-bool PRUTargetLowering::getPostIndexedAddressParts(SDNode *N, SDNode *Op,
-                                                   SDValue &Base,
-                                                   SDValue &Offset,
-                                                   ISD::MemIndexedMode &AM,
-                                                   SelectionDAG &DAG) const {
-
-    LoadSDNode *LD = cast<LoadSDNode>(N);
-    if (LD->getExtensionType() != ISD::NON_EXTLOAD)
-        return false;
-
-    EVT VT = LD->getMemoryVT();
-    if (VT != MVT::i8 && VT != MVT::i16)
-        return false;
-
-    if (Op->getOpcode() != ISD::ADD)
-        return false;
-
-    if (ConstantSDNode *RHS = dyn_cast<ConstantSDNode>(Op->getOperand(1))) {
-        uint64_t RHSC = RHS->getZExtValue();
-        if ((VT == MVT::i16 && RHSC != 2) || (VT == MVT::i8 && RHSC != 1))
-            return false;
-
-        Base = Op->getOperand(0);
-        Offset = DAG.getConstant(RHSC, SDLoc(N), VT);
-        AM = ISD::POST_INC;
-        return true;
-    }
-
-    return false;
-}
-*/
-
 const char *PRUTargetLowering::getTargetNodeName(unsigned Opcode) const {
     switch ((PRUISD::NodeType)Opcode) {
     case PRUISD::FIRST_NUMBER:
@@ -612,14 +517,7 @@ const char *PRUTargetLowering::getTargetNodeName(unsigned Opcode) const {
 
 SDValue PRUTargetLowering::PerformDAGCombine(SDNode *n,
                                              DAGCombinerInfo &comb) const {
-    switch (n->getOpcode()) {
-        /*case ISD::ZERO_EXTEND:
-            dbgs() << "[pru] PerformDAGCombine: zext -> anyext\n";
-            return comb.DAG.getNode(ISD::ANY_EXTEND, SDLoc(n),
-           n->getValueType(0),
-                                    n->getOperand(0));*/
-    }
-
+    // placeholder
     return SDValue();
 }
 
