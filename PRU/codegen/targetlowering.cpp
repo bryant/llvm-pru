@@ -149,7 +149,7 @@ class PruCCState : public CCState {
             if (subreg == 0) {
                 dbgs() << "couldn't find a subreg\n";
                 // chomp byte-by-byte
-                for (unsigned left = bits; left > 0; left -= 8) {
+                for (unsigned left = 0; left < bits; left += 8) {
                     unsigned subreg = reginfo.find_subreg_in(reg, offset, 8);
                     dbgs() << "collecting bytesub @ " << offset << " of reg "
                            << reginfo.getName(reg) << ": ";
