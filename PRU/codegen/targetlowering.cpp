@@ -142,7 +142,7 @@ class PruCCState : public CCState {
             }
         };
 
-        for (CCValAssign &p : getPendingLocs()) {
+        for (CCValAssign &p : locs) {
             unsigned bits = p.getLocVT().getSizeInBits();
             unsigned subreg = reginfo.find_subreg_in(reg, offset, bits);
 
