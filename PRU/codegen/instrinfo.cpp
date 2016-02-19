@@ -135,10 +135,16 @@ void PRUInstrInfo::storeRegToStackSlot(MachineBasicBlock &b,
         llvm_unreachable("unknown register class");
     }
 
+    MachineFunction &f = *b.getParent();
+    MachineFrameInfo &frinfo = *f.getFrameInfo();
     BuildMI(b, insert_point, insert_point->getDebugLoc(), get(opcode))
         .addReg(reg, getKillRegState(kill))
         .addFrameIndex(frameindex)
-        .addImm(0);
+        .addImm(0)
+        .addMemOperand(f.getMachineMemOperand(
+            MachinePointerInfo::getFixedStack(f, frameindex),
+            MachineMemOperand::MOStore, frinfo.getObjectSize(frameindex),
+            frinfo.getObjectAlignment(frameindex)));
 }
 
 void PRUInstrInfo::loadRegFromStackSlot(MachineBasicBlock &b,
@@ -158,10 +164,16 @@ void PRUInstrInfo::loadRegFromStackSlot(MachineBasicBlock &b,
         llvm_unreachable("unknown register class");
     }
 
+    MachineFunction &f = *b.getParent();
+    MachineFrameInfo &frinfo = *f.getFrameInfo();
     BuildMI(b, i, i->getDebugLoc(), get(opcode))
-        .addReg(reg)
+        .addReg(reg, getDefRegState(true))
         .addFrameIndex(frameindex)
-        .addImm(0);
+        .addImm(0)
+        .addMemOperand(f.getMachineMemOperand(
+            MachinePointerInfo::getFixedStack(f, frameindex),
+            MachineMemOperand::MOStore, frinfo.getObjectSize(frameindex),
+            frinfo.getObjectAlignment(frameindex)));
 }
 
 void PRUInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
