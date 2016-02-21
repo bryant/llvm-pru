@@ -106,21 +106,21 @@ unsigned PRURegisterInfo::find_subreg_in(unsigned reg, unsigned offset,
 }
 
 const std::vector<MCPhysReg> PRURegisterInfo::i8_arg_regs() const {
-    size_t len = sizeof(i8_args_SaveList) / sizeof(MCPhysReg);
+    size_t len = sizeof(i8_args_SaveList) / sizeof(MCPhysReg) - 1;
     static const std::vector<MCPhysReg> rv(i8_args_SaveList,
                                            i8_args_SaveList + len);
     return rv;
 }
 
 const std::vector<MCPhysReg> PRURegisterInfo::i16_arg_regs() const {
-    size_t len = sizeof(i16_args_SaveList) / sizeof(MCPhysReg);
+    size_t len = sizeof(i16_args_SaveList) / sizeof(MCPhysReg) - 1;
     static const std::vector<MCPhysReg> rv(i16_args_SaveList,
                                            i16_args_SaveList + len);
     return rv;
 }
 
 const std::vector<MCPhysReg> PRURegisterInfo::i32_arg_regs() const {
-    size_t len = sizeof(i32_args_SaveList) / sizeof(MCPhysReg);
+    size_t len = sizeof(i32_args_SaveList) / sizeof(MCPhysReg) - 1;
     static const std::vector<MCPhysReg> rv(i32_args_SaveList,
                                            i32_args_SaveList + len);
     return rv;
