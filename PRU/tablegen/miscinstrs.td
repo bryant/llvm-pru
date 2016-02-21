@@ -90,7 +90,7 @@ def call : Instruction {
     let InOperandList = (ins gaddr: $calladdr);
     let OutOperandList = (outs);
     let AsmString = "CALL $calladdr";
-    let Pattern = [(pru_call tglobaladdr: $calladdr)];
+    let Pattern = [];
     let Uses = [r2];  // protects stack adj from deletion
     let Defs = [r3_w2];
     let isCall = 1;

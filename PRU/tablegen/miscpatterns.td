@@ -42,3 +42,6 @@ def : Pat<
     (INSERT_SUBREG (INSERT_SUBREG (i32 (IMPLICIT_DEF)), reg16: $low, sub_16_0),
                    reg16: $high, sub_16_16)
 >;
+
+def : Pat<(pru_call tglobaladdr: $calladdr), (call tglobaladdr: $calladdr)>;
+def : Pat<(pru_call texternalsym: $calladdr), (call texternalsym: $calladdr)>;
