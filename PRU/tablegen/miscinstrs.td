@@ -80,7 +80,6 @@ def ret : Instruction {
     let OutOperandList = (outs);
     let AsmString = "JMP r3.w2";
     let Pattern = [(retflag)];
-    //let Uses = [r14, r15];  // protects retval assignments from deletion
     let isPseudo = 1;
     let isReturn = 1;
     let isTerminator = 1;
