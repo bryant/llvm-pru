@@ -211,16 +211,10 @@ const char *PRUTargetLowering::getTargetNodeName(unsigned Opcode) const {
         break;
     case PRUISD::RET_FLAG:
         return "PRUISD::RET_FLAG";
-    case PRUISD::RETI_FLAG:
-        return "PRUISD::RETI_FLAG";
     case PRUISD::CALL:
         return "PRUISD::CALL";
     case PRUISD::TargetConst:
         return "PRUISD::TargetConst";
-    case PRUISD::BR_CC:
-        return "PRUISD::BR_CC";
-    case PRUISD::SELECT_CC:
-        return "PRUISD::SELECT_CC";
     }
     return nullptr;
 }

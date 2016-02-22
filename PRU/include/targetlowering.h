@@ -12,24 +12,11 @@ enum NodeType : unsigned {
     /// Return with a flag operand. Operand 0 is the chain operand.
     RET_FLAG,
 
-    /// Same as RET_FLAG, but used for returning from ISRs.
-    RETI_FLAG,
-
     /// CALL - These operations represent an abstract call
     /// instruction, which includes a bunch of information.
     CALL,
 
     TargetConst,
-
-    /// PRU conditional branches. Operand 0 is the chain operand, operand 1
-    /// is the block to branch if condition is true, operand 2 is the
-    /// condition code, and operand 3 is the flag operand produced by a CMP
-    /// instruction.
-    BR_CC,
-
-    /// SELECT_CC - Operand 0 and operand 1 are selection variable, operand 3
-    /// is condition code and operand 4 is flag operand.
-    SELECT_CC
 };
 }
 
