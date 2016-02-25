@@ -83,12 +83,18 @@ bool PRUInstrInfo::getMemOpBaseRegImmOfs(MachineInstr *i, unsigned &basereg,
     i->print(dbgs());
     dbgs() << "\n";
 
-    if ((is_load(i->getOpcode()) || is_store(i->getOpcode())) &&
-        i->getOperand(1).isReg() && i->getOperand(2).isImm()) {
-        basereg = i->getOperand(1).getReg();
-        offset = i->getOperand(2).getImm();
-        dbgs() << "returning true\n";
-        return true;
+    if ((is_load(i->getOpcode()) || is_store(i->getOpcode()))) {
+        if (i->getOperand(1).isReg() && i->getOperand(2).isImm()) {
+            basereg = i->getOperand(1).getReg();
+            offset = i->getOperand(2).getImm();
+            dbgs() << "returning true\n";
+            return true;
+        } else if (i->getOperand(1).isFI() && i->getOperand(2).isImm()) {
+            basereg = PRU::r2; // i->getOperand(1).getIndex();
+            offset = i->getOperand(2).getImm();
+            dbgs() << "returning true\n";
+            return true;
+        }
     }
 
     return false;
