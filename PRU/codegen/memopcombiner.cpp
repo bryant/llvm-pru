@@ -33,7 +33,8 @@ template <typename T> bool intervals_intersect(T s0, T e0, T s1, T e1) {
 }
 
 struct MemLoc {
-    enum { BaseOffset, FrameSlot, AlwaysAliases } kind;
+    enum Kind { BaseOffset, FrameSlot, AlwaysAliases };
+    Kind kind;
     MachineInstr *i;
 
     struct _B {
@@ -42,34 +43,48 @@ struct MemLoc {
         Offset end;
     };
 
-    union {
-        _B b;          // baseoffset
-        int slotindex; // frameslot
+    struct _S {
+        Offset start;
+        Offset end;
     };
 
-    MemLoc(MachineInstr &ii, BaseReg breg, Offset s, Offset e)
-        : kind(BaseOffset), i(&ii) {
-        b.base = breg;
-        b.start = s;
-        b.end = e;
+    union {
+        _B b; // baseoffset
+        _S s; // frameslot
+    };
+
+  private:
+    MemLoc(MachineInstr &ii, Kind k) : kind(k), i(&ii) {}
+
+  public:
+    static MemLoc from_base_offset(MachineInstr &ii) {
+        auto rv = MemLoc(ii, BaseOffset);
+        rv.b.base = ii.getOperand(1).getReg();
+        rv.b.start = ii.getOperand(2).getImm();
+        rv.b.end = static_cast<Offset>((*ii.memoperands_begin())->getSize()) +
+                   rv.b.start - 1;
+        return rv;
     }
 
-    MemLoc(MachineInstr &ii, int fi) : kind(FrameSlot), i(&ii) {
-        slotindex = fi;
+    static MemLoc from_fi(MachineInstr &ii) {
+        auto rv = MemLoc(ii, FrameSlot);
+        // TODO: this duplicates logic in PRURegisterInfo::eliminateFrameIndex
+        int fi = ii.getOperand(1).getIndex();
+        MachineFrameInfo &frinfo = *ii.getParent()->getParent()->getFrameInfo();
+        rv.s.start = frinfo.getStackSize() + frinfo.getObjectOffset(fi) +
+                     ii.getOperand(2).getImm();
+        rv.s.end = static_cast<Offset>((*ii.memoperands_begin())->getSize()) +
+                   rv.s.start - 1;
+        return rv;
     }
-
-    MemLoc(MachineInstr &ii) : kind(AlwaysAliases), i(&ii) {}
 
     static MemLoc from_mi(MachineInstr &ii) {
         if (ii.getOperand(1).isReg() && ii.getOperand(2).isImm()) {
-            return MemLoc(
-                ii, ii.getOperand(1).getReg(), ii.getOperand(2).getImm(),
-                static_cast<Offset>((*ii.memoperands_begin())->getSize()) +
-                    ii.getOperand(2).getImm() - 1);
+            return MemLoc::from_base_offset(ii);
         } else if (ii.getOperand(1).isFI()) {
-            return MemLoc(ii, ii.getOperand(1).getIndex());
+            return MemLoc::from_fi(ii);
         } else {
-            return MemLoc(ii);
+            return MemLoc(ii, AlwaysAliases);
         }
     }
 
@@ -88,7 +103,9 @@ struct MemLoc {
                                      other.b.end)) {
                 return false;
             }
-        } else if (slotindex != other.slotindex) {
+        } else if (kind == FrameSlot &&
+                   !intervals_intersect(s.start, s.end, other.s.start,
+                                        other.s.end)) {
             return false;
         }
 
@@ -100,7 +117,7 @@ struct MemLoc {
         if (kind == MemLoc::BaseOffset) {
             return b.start < other.b.start;
         } else if (kind == MemLoc::FrameSlot) {
-            return slotindex < other.slotindex;
+            return s.start < other.s.start;
         }
         return true;
     }
@@ -113,7 +130,7 @@ raw_ostream &operator<<(raw_ostream &o, const MemLoc &l) {
           << ")";
         break;
     case MemLoc::FrameSlot:
-        o << "FrameSlot(" << l.slotindex << ")";
+        o << "FrameSlot(" << l.s.start << ", " << l.s.end << ")";
         break;
     default:
         o << "AlwaysAliases";
@@ -178,8 +195,8 @@ struct Collector {
     }
 
     void update(MachineInstr &i) {
-        MemLoc loc(i);
-        if (is_clusterable(i, loc)) {
+        if (is_clusterable(i)) {
+            auto loc = MemLoc::from_mi(i);
             unsigned mrc;
             if (has_previous_collision(loc, mrc)) {
                 add_to_clusters(loc,
@@ -188,7 +205,8 @@ struct Collector {
                 add_to_clusters(loc, [](Cluster &c) { return true; });
             }
         }
-        if (could_alias_clusters(i, loc)) {
+        if (could_alias_clusters(i)) {
+            auto loc = MemLoc::from_mi(i);
             aliasables.push_back(std::make_pair(loc, curidx));
         }
         ++curidx;
@@ -230,26 +248,23 @@ template <typename F, typename G> Collector<F, G> gen_collector(F f, G g) {
     return Collector<F, G>(f, g);
 }
 
-bool clusterable_load(MachineInstr &i, MemLoc &loc) {
+bool clusterable_load(const MachineInstr &i) {
     if (PRUInstrInfo::is_load(i.getOpcode()) && !i.hasOrderedMemoryRef()) {
-        loc = MemLoc::from_mi(i);
         return true;
     }
     return false;
 }
 
-bool clusterable_store(MachineInstr &i, MemLoc &loc) {
+bool clusterable_store(const MachineInstr &i) {
     if (PRUInstrInfo::is_store(i.getOpcode()) && !i.hasOrderedMemoryRef()) {
-        loc = MemLoc::from_mi(i);
         return true;
     }
     return false;
 };
 
-bool is_load_or_store(MachineInstr &i, MemLoc &loc) {
+bool is_load_or_store(MachineInstr &i) {
     if (PRUInstrInfo::is_load(i.getOpcode()) ||
         PRUInstrInfo::is_store(i.getOpcode())) {
-        loc = MemLoc::from_mi(i);
         return true;
     }
     return false;
