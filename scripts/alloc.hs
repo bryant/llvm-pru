@@ -44,4 +44,5 @@ chunks n regs = zip [0, n..] . c' n $ Arr.elems regs
         [] -> [take n xs]
         rest -> take n xs : c' n rest
 
+mk_reg :: Int -> RegFile
 mk_reg n = Arr.listArray (0, n - 1) $ replicate n True
