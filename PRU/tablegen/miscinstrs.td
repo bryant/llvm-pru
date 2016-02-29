@@ -80,7 +80,6 @@ def ret : Instruction {
     let OutOperandList = (outs);
     let AsmString = "JMP r3.w2";
     let Pattern = [(retflag)];
-    let isPseudo = 1;
     let isReturn = 1;
     let isTerminator = 1;
     let isBarrier = 1;
@@ -89,12 +88,11 @@ def ret : Instruction {
 def call : Instruction {
     let InOperandList = (ins gaddr: $calladdr);
     let OutOperandList = (outs);
-    let AsmString = "CALL $calladdr";
+    let AsmString = "JAL r3.w2, $calladdr";
     let Pattern = [];
     let Uses = [r2];  // protects stack adj from deletion
     let Defs = [r3_w2];
     let isCall = 1;
-    let isPseudo = 1;
 }
 
 def addcallstack : Instruction {
