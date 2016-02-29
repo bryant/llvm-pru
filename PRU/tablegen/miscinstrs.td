@@ -74,6 +74,49 @@ def lbbo_r8 : Instruction {
     let AsmString = "LBBO &$r, $memloc, 1";
     let Pattern = [(set i8: $r, (load addr: $memloc))];
 }
+}
+
+def sbbo_r32_r : Instruction {
+    let InOperandList = (ins reg32: $r, regaddr: $memloc);
+    let OutOperandList = (outs);
+    let AsmString = "SBBO &$r, $memloc, 4";
+    let Pattern = [(store i32: $r, regaddr: $memloc)];
+}
+
+def sbbo_r16_r : Instruction {
+    let InOperandList = (ins reg16: $r, regaddr: $memloc);
+    let OutOperandList = (outs);
+    let AsmString = "SBBO &$r, $memloc, 2";
+    let Pattern = [(store i16: $r, regaddr: $memloc)];
+}
+
+def sbbo_r8_r : Instruction {
+    let InOperandList = (ins reg8: $r, regaddr: $memloc);
+    let OutOperandList = (outs);
+    let AsmString = "SBBO &$r, $memloc, 1";
+    let Pattern = [(store i8: $r, regaddr: $memloc)];
+}
+
+def lbbo_r32_r : Instruction {
+    let InOperandList = (ins regaddr: $memloc);
+    let OutOperandList = (outs reg32: $r);
+    let AsmString = "LBBO &$r, $memloc, 4";
+    let Pattern = [(set i32: $r, (load regaddr: $memloc))];
+}
+
+def lbbo_r16_r : Instruction {
+    let InOperandList = (ins regaddr: $memloc);
+    let OutOperandList = (outs reg16: $r);
+    let AsmString = "LBBO &$r, $memloc, 2";
+    let Pattern = [(set i16: $r, (load regaddr: $memloc))];
+}
+
+def lbbo_r8_r : Instruction {
+    let InOperandList = (ins regaddr: $memloc);
+    let OutOperandList = (outs reg8: $r);
+    let AsmString = "LBBO &$r, $memloc, 1";
+    let Pattern = [(set i8: $r, (load regaddr: $memloc))];
+}
 
 def ret : Instruction {
     let InOperandList = (ins);

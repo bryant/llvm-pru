@@ -22,8 +22,16 @@ void PRUInstPrinter::print_addr(const MCInst *inst, unsigned opnum,
     auto base_reg = inst->getOperand(opnum);
     auto offset = inst->getOperand(opnum + 1);
 
-    out << getRegisterName(base_reg.getReg()) << ", "
-        << formatImm(offset.getImm());
+    out << getRegisterName(base_reg.getReg()) << ", ";
+    if (offset.isImm()) {
+        out << formatImm(offset.getImm());
+    }
+    else if (offset.isReg()) {
+        out << getRegisterName(offset.getReg());
+    }
+    else {
+        llvm_unreachable("offset operand was neither imm nor reg!");
+    }
 }
 
 void PRUInstPrinter::printPCRelImmOperand(const MCInst *MI, unsigned OpNo,

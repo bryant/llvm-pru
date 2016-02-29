@@ -74,55 +74,50 @@ struct PruISel : public SelectionDAGISel {
         DEBUG(dbgs() << "[pru] " << addr.getNumOperands() << " operands!\n");
 
         // frame index
-        if (addr.getOpcode() == ISD::FrameIndex) {
-            FrameIndexSDNode *fi = dyn_cast<FrameIndexSDNode>(addr);
+        if (FrameIndexSDNode *fi = dyn_cast<FrameIndexSDNode>(addr)) {
             base = CurDAG->getTargetFrameIndex(fi->getIndex(), ptr_ty);
             offset = CurDAG->getTargetConstant(0, SDLoc(addr), ptr_ty);
 
             return true;
         }
 
-        // reg + _ form
-        else if (addr.getOpcode() == ISD::ADD || addr.getOpcode() == ISD::SUB ||
-                 CurDAG->isBaseWithConstantOffset(addr)) {
-            if (ConstantSDNode *op1 =
-                    dyn_cast<ConstantSDNode>(addr.getOperand(1))) {
-                int noffset = addr.getOpcode() == ISD::SUB
-                                  ? -op1->getSExtValue()
-                                  : op1->getSExtValue();
-                // TODO: handle with reg offset
-                assert(0 <= noffset && noffset <= 255);
+        // reg `binop` imm form
+        else if (isa<ConstantSDNode>(addr.getOperand(1)) &&
+                 (addr.getOpcode() == ISD::ADD ||
+                  addr.getOpcode() == ISD::SUB ||
+                  CurDAG->isBaseWithConstantOffset(addr))) {
+            ConstantSDNode *op1 = dyn_cast<ConstantSDNode>(addr.getOperand(1));
+            int noffset = addr.getOpcode() == ISD::SUB ? -op1->getSExtValue()
+                                                       : op1->getSExtValue();
+            DEBUG(dbgs() << "SelectAddress: noffset = " << noffset << "\n");
 
-                DEBUG(dbgs() << "[pru] SelectAddress offset was: " << noffset
-                             << "\n");
+            if (0 <= noffset && noffset < 256) {
                 offset =
                     CurDAG->getTargetConstant(noffset, SDLoc(addr), ptr_ty);
-
-                if (addr.getOperand(0).getOpcode() == ISD::FrameIndex) {
-                    FrameIndexSDNode *fi =
-                        dyn_cast<FrameIndexSDNode>(addr.getOperand(0));
-                    assert(fi);
+                if (FrameIndexSDNode *fi =
+                        dyn_cast<FrameIndexSDNode>(addr.getOperand(0))) {
                     base = CurDAG->getTargetFrameIndex(fi->getIndex(), ptr_ty);
                 } else {
                     base = addr.getOperand(0);
                 }
-
-            } else {
-                if (addr.getOpcode() == ISD::SUB) {
-                    llvm_unreachable("can't subtract non-const offset to get "
-                                     "to frame index");
-                }
-
-                base = addr.getOperand(0);
-                offset = addr.getOperand(1);
+                return true;
             }
-            return true;
+        }
 
-        } else {
-            DEBUG(dbgs() << "[pru] warning: blindly setting base/offset for "
-                            "addr node\n");
-            base = addr;
-            offset = CurDAG->getTargetConstant(0, SDLoc(addr), ptr_ty);
+        return false;
+    }
+
+    bool SelectAddressReg(SDValue addr, SDValue &base, SDValue &offset) {
+        auto ptrvt = TLI->getPointerTy(CurDAG->getDataLayout());
+        DEBUG(dbgs() << "SelectAddressReg chosen");
+        if (addr.getOpcode() == ISD::ADD || addr.getOpcode() == ISD::SUB) {
+            if (FrameIndexSDNode *fi =
+                    dyn_cast<FrameIndexSDNode>(addr.getOperand(0))) {
+                base = CurDAG->getTargetFrameIndex(fi->getIndex(), ptrvt);
+            } else {
+                base = addr.getOperand(0);
+            }
+            offset = addr.getOperand(1);
             return true;
         }
 

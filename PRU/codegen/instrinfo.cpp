@@ -101,11 +101,29 @@ bool PRUInstrInfo::getMemOpBaseRegImmOfs(MachineInstr *i, unsigned &basereg,
 }
 
 bool PRUInstrInfo::is_load(unsigned opc) {
-    return opc == PRU::lbbo_r32 || opc == PRU::lbbo_r16 || opc == PRU::lbbo_r8;
+    switch (opc) {
+    case PRU::lbbo_r32:
+    case PRU::lbbo_r16:
+    case PRU::lbbo_r8:
+    case PRU::lbbo_r32_r:
+    case PRU::lbbo_r16_r:
+    case PRU::lbbo_r8_r:
+        return true;
+    }
+    return false;
 }
 
 bool PRUInstrInfo::is_store(unsigned opc) {
-    return opc == PRU::sbbo_r32 || opc == PRU::sbbo_r16 || opc == PRU::sbbo_r8;
+    switch (opc) {
+    case PRU::sbbo_r32:
+    case PRU::sbbo_r16:
+    case PRU::sbbo_r8:
+    case PRU::sbbo_r32_r:
+    case PRU::sbbo_r16_r:
+    case PRU::sbbo_r8_r:
+        return true;
+    }
+    return false;
 }
 
 void PRUInstrInfo::storeRegToStackSlot(MachineBasicBlock &b,
