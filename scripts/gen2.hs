@@ -72,6 +72,7 @@ instance Show a => Show (Operand a) where
 data ExtraAttr = IsReturn Bool | IsBranch Bool | IsTerminator Bool
     | HasSideEffects Bool | IsPseudo Bool | IsMoveImm Bool | Uses [String]
     | Defs [String] | UsesCustomInserter Bool | IsBarrier Bool
+    | IsRematerializable Bool
 
 -- TODO: consider replacing this entire enterprise with something that's
 -- remotely fucking typesafe
@@ -135,6 +136,7 @@ extfmt (UsesCustomInserter n) = ("usesCustomInserter", to_bit n)
 extfmt (Uses regs) = ("Uses", "[" ++ commasep (map show regs) ++ "]")
 extfmt (Defs regs) = ("Defs", "[" ++ commasep (map show regs) ++ "]")
 extfmt (IsBarrier n) = ("isBarrier", to_bit n)
+extfmt (IsRematerializable n) = ("isReMaterializable", to_bit n)
 
 to_bit :: Bool -> String
 to_bit = show . fromEnum
@@ -222,8 +224,10 @@ simple_br pref mpref cc (lhs, rhs) =
 
 alu_bin_op pref mpref op (dest, lhs, rhs) =
     Instruction (mangled pref [dest, lhs, rhs]) [dest] [lhs, rhs] (mnem mpref)
-                (pats op' dest) []
-    where op' [l, r] = op l r
+                (pats op' dest) attrs
+    where
+    attrs | Imm _ _ <- rhs = [IsRematerializable True] | otherwise = []
+    op' [l, r] = op l r
 
 alu_un_op p mp op (dest, src) =
     Instruction (mangled p [dest, src]) [dest] [src] (mnem mp) (pats op' dest)

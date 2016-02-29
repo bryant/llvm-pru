@@ -1,4 +1,4 @@
-let isMoveImm = 1 in {
+let isMoveImm = 1, isReMaterializable = 1 in {
 def pru_ldi_i32imm : Instruction {
     let InOperandList = (ins i32imm: $imm);
     let OutOperandList = (outs reg32: $dest);
@@ -54,6 +54,7 @@ def sbbo_r8 : Instruction {
     let Pattern = [(store i8: $r, addr: $memloc)];
 }
 
+let isReMaterializable = 1 in {
 def lbbo_r32 : Instruction {
     let InOperandList = (ins addr: $memloc);
     let OutOperandList = (outs reg32: $r);
