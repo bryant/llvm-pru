@@ -62,9 +62,8 @@ class PRUInstrInfo : public PRUGenInstrInfo {
 
     bool getMemOpBaseRegImmOfs(MachineInstr *, unsigned &, unsigned &,
                                const TargetRegisterInfo *) const override;
-    static bool is_load(unsigned);
 
-    static unsigned mem_op_size(unsigned);
+    static bool is_load(unsigned);
 
     static bool is_store(unsigned opc);
 };

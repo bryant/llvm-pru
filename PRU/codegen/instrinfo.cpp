@@ -104,22 +104,6 @@ bool PRUInstrInfo::is_load(unsigned opc) {
     return opc == PRU::lbbo_r32 || opc == PRU::lbbo_r16 || opc == PRU::lbbo_r8;
 }
 
-unsigned PRUInstrInfo::mem_op_size(unsigned opc) {
-    switch (opc) {
-    case PRU::lbbo_r32:
-    case PRU::sbbo_r32:
-        return 4;
-    case PRU::lbbo_r16:
-    case PRU::sbbo_r16:
-        return 2;
-    case PRU::lbbo_r8:
-    case PRU::sbbo_r8:
-        return 1;
-    default:
-        llvm_unreachable("unknown load opcode");
-    }
-}
-
 bool PRUInstrInfo::is_store(unsigned opc) {
     return opc == PRU::sbbo_r32 || opc == PRU::sbbo_r16 || opc == PRU::sbbo_r8;
 }
