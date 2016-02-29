@@ -228,36 +228,59 @@ SDValue PRUTargetLowering::PerformDAGCombine(SDNode *n,
 bool is_register_sized(unsigned n) { return n == 8 || n == 16 || n == 32; }
 
 bool PRUTargetLowering::isTruncateFree(Type *src, Type *smaller) const {
-    bool rv = is_register_sized(smaller->getPrimitiveSizeInBits()) &&
-              is_register_sized(src->getPrimitiveSizeInBits());
-    dbgs() << "[pru] isTruncateFree called on " << src->getPrimitiveSizeInBits()
-           << ", " << smaller->getPrimitiveSizeInBits() << ", returning " << rv
-           << "\n";
-    return rv;
+    if (src->isIntegerTy() && smaller->isIntegerTy()) {
+        unsigned srcb = src->getPrimitiveSizeInBits();
+        unsigned smallerb = smaller->getPrimitiveSizeInBits();
+
+        bool rv = smallerb < srcb &&
+                  is_register_sized(smaller->getPrimitiveSizeInBits()) &&
+                  is_register_sized(src->getPrimitiveSizeInBits());
+        dbgs() << "[pru] isTruncateFree called on " << srcb << ", " << smallerb
+               << ", returning " << rv << "\n";
+        return rv;
+    }
+    return false;
 }
 
 bool PRUTargetLowering::isTruncateFree(EVT src, EVT smaller) const {
-    bool rv = is_register_sized(smaller.getSizeInBits()) &&
-              is_register_sized(src.getSizeInBits());
-    dbgs() << "[pru] isTruncateFree called on " << src.getSizeInBits() << ", "
-           << smaller.getSizeInBits() << ", returning " << rv << "\n";
-    return rv;
+    if (src.isInteger() && smaller.isInteger()) {
+        unsigned srcb = src.getSizeInBits();
+        unsigned smallerb = smaller.getSizeInBits();
+
+        bool rv = smallerb < srcb && is_register_sized(smallerb) &&
+                  is_register_sized(srcb);
+        dbgs() << "[pru] isTruncateFree called on " << srcb << ", " << smallerb
+               << ", returning " << rv << "\n";
+        return rv;
+    }
+    return false;
 }
 
 bool PRUTargetLowering::isZExtFree(Type *src, Type *larger) const {
-    bool rv = is_register_sized(larger->getPrimitiveSizeInBits()) &&
-              is_register_sized(src->getPrimitiveSizeInBits());
-    dbgs() << "[pru] isZExt called on " << src->getPrimitiveSizeInBits() << ", "
-           << larger->getPrimitiveSizeInBits() << ", returning " << rv << "\n";
-    return rv;
+    if (src->isIntegerTy() && larger->isIntegerTy()) {
+        unsigned srcb = src->getPrimitiveSizeInBits();
+        unsigned largerb = larger->getPrimitiveSizeInBits();
+
+        bool rv = largerb > srcb && is_register_sized(largerb) &&
+                  is_register_sized(srcb);
+        dbgs() << "[pru] isZExt called on " << srcb << ", " << largerb
+               << ", returning " << rv << "\n";
+        return rv;
+    }
+    return false;
 }
 
 bool PRUTargetLowering::isZExtFree(EVT src, EVT larger) const {
-    bool rv = is_register_sized(larger.getSizeInBits()) &&
-              is_register_sized(src.getSizeInBits());
-    dbgs() << "[pru] isZExtFree called on " << src.getSizeInBits() << ", "
-           << larger.getSizeInBits() << ", returning " << rv << "\n";
-    return rv;
+    if (src.isInteger() && larger.isInteger()) {
+        unsigned srcb = src.getSizeInBits();
+        unsigned largerb = larger.getSizeInBits();
+        bool rv = largerb > srcb && is_register_sized(largerb) &&
+                  is_register_sized(srcb);
+        dbgs() << "[pru] isZExtFree called on " << srcb << ", " << largerb
+               << ", returning " << rv << "\n";
+        return rv;
+    }
+    return false;
 }
 
 unsigned select_cc_to_branch_code(MachineInstr &i) {
