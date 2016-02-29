@@ -40,11 +40,6 @@ BitVector PRURegisterInfo::getReservedRegs(const MachineFunction &MF) const {
     mark_reserved(PRU::r30); // aliased to io
     mark_reserved(PRU::r31); // " " "
 
-    if (getFrameLowering(MF)->hasFP(MF)) {
-        // reserved.set(PRU::r4);
-        mark_reserved(PRU::r4);
-    }
-
     return reserved;
 }
 
