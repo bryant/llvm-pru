@@ -26,20 +26,30 @@ bool PRUInstrInfo::areLoadsFromSameBasePtr(SDNode *load0, SDNode *load1,
     load0->print(dbgs());
     dbgs() << "\n";
     load1->print(dbgs());
+    dbgs() << "\nload0.op0: ";
+    load0->getOperand(0)->print(dbgs());
+    dbgs() << "\nload0.op1: ";
+    load1->getOperand(0)->print(dbgs());
     dbgs() << "\n";
 
     if (load0->isMachineOpcode() && load1->isMachineOpcode() &&
         is_load(load0->getMachineOpcode()) &&
         is_load(load1->getMachineOpcode()) &&
-        load0->getOperand(0) == load1->getOperand(0) &&
         isa<ConstantSDNode>(load0->getOperand(1)) &&
         isa<ConstantSDNode>(load1->getOperand(1))) {
 
-        off0 = cast<ConstantSDNode>(load0->getOperand(1))->getSExtValue();
-        off1 = cast<ConstantSDNode>(load1->getOperand(1))->getSExtValue();
+        if (isa<FrameIndexSDNode>(load0->getOperand(0)) &&
+            isa<FrameIndexSDNode>(load1->getOperand(0))) {
+            int fi0 = cast<FrameIndexSDNode>(load0->getOperand(0))->getIndex();
+            int fi1 = cast<FrameIndexSDNode>(load1->getOperand(0))->getIndex();
 
-        dbgs() << "returning true\n";
-        return true;
+            off0 = fi0 +
+                   cast<ConstantSDNode>(load0->getOperand(1))->getSExtValue();
+            off1 = fi1 +
+                   cast<ConstantSDNode>(load1->getOperand(1))->getSExtValue();
+            dbgs() << "returning true\n";
+            return true;
+        }
     }
     return false;
 }
@@ -52,7 +62,10 @@ bool PRUInstrInfo::shouldScheduleLoadsNear(SDNode *l0, SDNode *l1, int64_t off0,
     dbgs() << "\n";
     l1->print(dbgs());
     dbgs() << "\n";
-    return true;
+    dbgs() << "(" << off0 << ", " << off1 << ") num loads = " << num_loads
+           << "\n";
+    dbgs() << "returning " << (num_loads < 6) << "\n";
+    return num_loads < 6;
 }
 
 bool PRUInstrInfo::shouldClusterLoads(MachineInstr *l0, MachineInstr *l1,
