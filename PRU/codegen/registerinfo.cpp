@@ -70,8 +70,7 @@ void PRURegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
 }
 
 unsigned PRURegisterInfo::getFrameRegister(const MachineFunction &MF) const {
-    const PRUFrameLowering *TFI = getFrameLowering(MF);
-    return TFI->hasFP(MF) ? PRU::r4 : PRU::r2;
+    return PRU::r2;
 }
 
 unsigned PRURegisterInfo::reg_size(unsigned regnum) const {
