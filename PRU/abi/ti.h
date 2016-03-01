@@ -196,7 +196,8 @@ struct TexasCC : public CC {
                     int fi = fr.CreateFixedObject(size, offset, true);
                     rv.push_back(sdag.getLoad(
                         m.VT, dl, ch, sdag.getFrameIndex(fi, ptrvt),
-                        MachinePointerInfo(), false, false, false, 0));
+                        MachinePointerInfo::getFixedStack(func, fi), false,
+                        false, false, 0));
                 }
             }
         }
