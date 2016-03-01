@@ -85,6 +85,8 @@ PRUTargetLowering::PRUTargetLowering(const TargetMachine &targ,
 
     setMinFunctionAlignment(1);
     setPrefFunctionAlignment(1);
+
+    setTargetDAGCombine(ISD::LOAD);
 }
 
 SDValue PRUTargetLowering::LowerOperation(SDValue op, SelectionDAG &dag) const {
@@ -240,6 +242,19 @@ const char *PRUTargetLowering::getTargetNodeName(unsigned Opcode) const {
 
 SDValue PRUTargetLowering::PerformDAGCombine(SDNode *n,
                                              DAGCombinerInfo &comb) const {
+    if (LoadSDNode *l = dyn_cast<LoadSDNode>(n)) {
+        const auto &mf = *comb.DAG.getMachineFunction().getFrameInfo();
+        const SDValue &bp = l->getBasePtr();
+        if (bp.getOpcode() == ISD::ADD &&
+            bp.getOperand(0).getOpcode() == ISD::FrameIndex) {
+            auto *fi = cast<FrameIndexSDNode>(bp.getOperand(0));
+            dbgs() << "found fi#" << fi->getIndex() << " "
+                   << mf.getObjectOffset(fi->getIndex()) << "\n";
+        } else if (FrameIndexSDNode *fi = dyn_cast<FrameIndexSDNode>(bp)) {
+            dbgs() << "found direct fi#" << fi->getIndex() << " "
+                   << mf.getObjectOffset(fi->getIndex()) << "\n";
+        }
+    }
     // placeholder
     return SDValue();
 }
