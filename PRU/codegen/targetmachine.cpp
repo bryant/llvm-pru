@@ -8,10 +8,9 @@
 
 using namespace llvm;
 
-static cl::opt<bool>
-    EnableCombiner("mem-op-combiner", cl::Hidden,
-                   cl::desc("Enables multi-register LBBO/SBBO operations."),
-                   cl::init(false));
+static cl::opt<bool> EnableCombiner2("bbo-combiner2", cl::Hidden,
+                                     cl::desc("Merge L-/SBBO ops."),
+                                     cl::init(false));
 
 namespace pru {
 
@@ -25,13 +24,12 @@ class PRUPassConfig : public TargetPassConfig {
         return false;
     }
 
-    void addPreRegAlloc() override {
-        if (EnableCombiner) {
-            addPass(new_mem_op_clusterer());
+    bool addPreRewrite() override {
+        if (EnableCombiner2) {
+            addPass(new_load_merger());
         }
+        return false;
     }
-
-    void addPreSched2() override { addPass(new_load_merger()); }
 };
 
 extern Target target;

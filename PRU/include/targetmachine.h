@@ -33,7 +33,6 @@ class PRUTargetMachine : public LLVMTargetMachine {
 
 namespace pru {
 using namespace llvm;
-FunctionPass *new_mem_op_clusterer();
 FunctionPass *new_load_merger();
 FunctionPass *new_pru_isel(TargetMachine &, CodeGenOpt::Level);
 }
