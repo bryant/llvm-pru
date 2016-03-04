@@ -47,6 +47,19 @@ class PRUInstrInfo : public PRUGenInstrInfo {
     bool
     ReverseBranchCondition(SmallVectorImpl<MachineOperand> &) const override;
 
+    bool areLoadsFromSameBasePtr(SDNode *, SDNode *, int64_t &,
+                                 int64_t &) const override;
+
+    bool shouldScheduleLoadsNear(SDNode *, SDNode *, int64_t, int64_t,
+                                 unsigned) const override;
+
+    bool enableClusterLoads() const override { return true; }
+
+    bool shouldClusterLoads(MachineInstr *, MachineInstr *,
+                            unsigned) const override;
+
+    bool shouldScheduleAdjacent(MachineInstr *, MachineInstr *) const override;
+
     bool getMemOpBaseRegImmOfs(MachineInstr *, unsigned &, unsigned &,
                                const TargetRegisterInfo *) const override;
 
