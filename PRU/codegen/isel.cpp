@@ -96,7 +96,16 @@ struct PruISel : public SelectionDAGISel {
                     CurDAG->getTargetConstant(noffset, SDLoc(addr), ptr_ty);
                 if (FrameIndexSDNode *fi =
                         dyn_cast<FrameIndexSDNode>(addr.getOperand(0))) {
-                    base = CurDAG->getTargetFrameIndex(fi->getIndex(), ptr_ty);
+                    const auto &mf = *MF->getFrameInfo();
+                    int real = mf.getStackSize() +
+                               mf.getObjectOffset(fi->getIndex()) + noffset;
+                    if (0 <= real && real < 256) {
+                        base =
+                            CurDAG->getTargetFrameIndex(fi->getIndex(), ptr_ty);
+                    } else {
+                        base = addr.getOperand(0);
+                        // non-target node further iseled
+                    }
                 } else {
                     base = addr.getOperand(0);
                 }
