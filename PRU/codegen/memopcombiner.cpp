@@ -41,7 +41,7 @@ struct MemLoc {
     enum OpSize { Byte = 1, Word = 2, DWord = 4 };
 
     Kind kind;
-    const MachineInstr *i;
+    MachineInstr *i;
     Offset start;
     Offset end;
     OpSize size;
@@ -61,7 +61,7 @@ struct MemLoc {
         }
     }
 
-    static MemLoc from_mi(const MachineInstr &ii) {
+    static MemLoc from_mi(MachineInstr &ii) {
         if (ii.getOperand(1).isReg() && ii.getOperand(2).isImm()) {
             Offset s = ii.getOperand(2).getImm();
             BaseReg b = ii.getOperand(1).getReg();
@@ -182,7 +182,7 @@ struct Collector {
         clusters.push_back({{loc}, curidx});
     }
 
-    void update(const MachineInstr &i) {
+    void update(MachineInstr &i) {
         if (is_clusterable(i)) {
             const auto loc = MemLoc::from_mi(i);
             unsigned mrc;
@@ -200,7 +200,7 @@ struct Collector {
         ++curidx;
     }
 
-    void operator()(const MachineInstr &i) { return update(i); }
+    void operator()(MachineInstr &i) { return update(i); }
 };
 
 bool clusterable_load(const MachineInstr &i) {
