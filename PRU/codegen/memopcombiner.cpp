@@ -349,7 +349,7 @@ struct FreeRegs {
 
     FreePlaces fit(const vector<MemLoc> &mems) const {
         assert(mems.size() > 0);
-        FreePlaces rv = mask_for(mems[0].size);
+        FreePlaces rv = this->places_for(mems[0]);
         unsigned offset = mems[0].size;
         for (MemLoc m : make_range(std::next(mems.begin()), mems.end())) {
             rv &= this->places_for(m) >> offset;
