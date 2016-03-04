@@ -488,6 +488,7 @@ struct LoadMerger : public MachineFunctionPass {
         vmap = &getAnalysis<VirtRegMap>();
         mri = &f.getRegInfo();
         tri = f.getSubtarget().getRegisterInfo();
+        const TargetInstrInfo &tii = *f.getSubtarget().getInstrInfo();
         lrm = &getAnalysis<LiveRegMatrix>();
 
         for (MachineBasicBlock &b : f) {
@@ -527,9 +528,53 @@ struct LoadMerger : public MachineFunctionPass {
                             dbgs() << ss << "\n";
                         }
                         dbgs() << "places: " << s.starts << "\n";
+
+                        MachineInstr &ins =
+                            *std::min_element(
+                                 s.ops.begin(), s.ops.end(),
+                                 [&](const MemLoc &a, const MemLoc &b) {
+                                     return li->getInstructionIndex(a.i) <
+                                            li->getInstructionIndex(b.i);
+                                 })
+                                 ->i;
+                        const MachineInstrBuilder &batch =
+                            BuildMI(b, &ins, ins.getDebugLoc(),
+                                    tii.get(PRU::lbbo_multiple))
+                                .addOperand(s.ops[0].i->getOperand(1)) // base
+                                .addOperand(s.ops[0].i->getOperand(2)) // offset
+                                .addImm(s.len_bytes);
+
+                        unsigned pos;
+                        for (size_t n = 0; n < s.starts.size(); n += 1) {
+                            if (s.starts[n] == 1) {
+                                pos = n;
+                                break;
+                            }
+                        }
+                        vector<unsigned> destvregs;
+                        // already sorted by addr
+                        for (MemLoc &memop : s.ops) {
+                            // lbbo dest, base, offset, #
+                            // => lbbo {d0, d1, ..}, base, offset, #
+                            const MachineOperand &dest = memop.i->getOperand(0);
+                            batch.addOperand(dest); // CHECK: op flags
+                            assert(dest.isReg());
+                            unsigned destreg = dest.getReg();
+                            destvregs.push_back(destreg);
+
+                            unsigned preg = reg_at_pos(pos, memop.size);
+                            dbgs() << "reassigning " << dest << ": "
+                                   << tri->getName(vmap->getPhys(destreg))
+                                   << " => " << tri->getName(preg) << "\n";
+                            vmap->clearVirt(destreg);
+                            vmap->assignVirt2Phys(destreg, preg);
+
+                            memop.i->removeFromParent();
+                            pos += memop.size;
+                        }
+                        li->repairIntervalsInRange(&b, b.begin(), b.end(),
+                                                   destvregs);
                     }
-                    // mbb::splice, li.handlemove, vmap.clearVirt(vreg),
-                    // vmap.assignVirt2Phs(vreg, preg);
                 }
             }
         }
