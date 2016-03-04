@@ -77,6 +77,14 @@ def lbbo_r8 : Instruction {
 }
 }
 
+def lbbo_multiple : Instruction {
+    let InOperandList = (ins addr: $memloc, i8imm: $bytes, reglist: $regs,
+                             variable_ops);
+    let OutOperandList = (outs);
+    let AsmString = "LBBO &$regs, $memloc, $bytes";
+    let Pattern = [];
+}
+
 def sbbo_r32_r : Instruction {
     let InOperandList = (ins reg32: $r, regaddr: $memloc);
     let OutOperandList = (outs);

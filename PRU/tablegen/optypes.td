@@ -23,6 +23,11 @@ def regaddr : Operand<iPTR>, ComplexPattern<iPTR, 2, "SelectAddressReg"> {
     let PrintMethod = "print_addr";
 }
 
+def reglist : Operand<i32>, AsmOperandClass {
+    let Name = "reglistop";
+    let PrintMethod = "print_multi_reg";
+}
+
 def build_pair : SDNode<"ISD::BUILD_PAIR",
     SDTypeProfile<1, 2, [SDTCisInt<0>, SDTCisInt<1>, SDTCisSameAs<1, 2>]>>;
 

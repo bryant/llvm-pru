@@ -126,6 +126,10 @@ bool PRUInstrInfo::is_load(unsigned opc) {
     return false;
 }
 
+bool PRUInstrInfo::is_load_multiple(unsigned opc) {
+    return opc == PRU::lbbo_multiple;
+}
+
 bool PRUInstrInfo::is_store(unsigned opc) {
     switch (opc) {
     case PRU::sbbo_r32:
