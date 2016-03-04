@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "llvm/CodeGen/LiveIntervalAnalysis.h"
+#include "llvm/CodeGen/LiveRegMatrix.h"
 #include "llvm/CodeGen/MachineBasicBlock.h"
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/MachineFunctionPass.h"
@@ -300,7 +301,7 @@ struct FreeRegs {
     FreePlaces free16;
     FreePlaces free8;
 
-    FreeRegs(const MachineFunction &f)
+    FreeRegs(const MachineFunction &f, const LiveRegMatrix &lrm)
         : free32(mask_for(MemLoc::DWord)), free16(mask_for(MemLoc::Word)),
           free8(mask_for(MemLoc::Byte)) {
         const auto &tri = *f.getSubtarget().getRegisterInfo();
@@ -317,7 +318,7 @@ struct FreeRegs {
             const_cast<MachineFunction &>(f), usable_cs, nullptr);
         const MCPhysReg *csregs = tri.getCalleeSavedRegs(&f);
         for (unsigned i = 0; csregs[i] != 0; i += 1) {
-            if (!usable_cs.test(csregs[i])) {
+            if (!lrm.isPhysRegUsed(csregs[i])) {
                 dbgs() << "unusable callee saved reg: "
                        << tri.getName(csregs[i]) << "\n";
                 add_live(csregs[i]);
@@ -404,6 +405,7 @@ struct LoadMerger : public MachineFunctionPass {
     static char id;
     LiveIntervals *li;
     VirtRegMap *vmap;
+    LiveRegMatrix *lrm;
     const MachineRegisterInfo *mri;
     const TargetRegisterInfo *tri;
 
@@ -448,7 +450,7 @@ struct LoadMerger : public MachineFunctionPass {
 
     FreeRegs free_within(const MachineFunction &f, SlotIndex s, SlotIndex e,
                          vector<unsigned> ks) const {
-        FreeRegs rv(f);
+        FreeRegs rv(f, *lrm);
         dbgs() << "free_within: free = " << rv << "\n";
         for (LiveInterval &iv : intervals()) {
             if (vmap->hasPhys(iv.reg) && iv.overlaps(s, e) &&
@@ -475,6 +477,7 @@ struct LoadMerger : public MachineFunctionPass {
         vmap = &getAnalysis<VirtRegMap>();
         mri = &f.getRegInfo();
         tri = f.getSubtarget().getRegisterInfo();
+        lrm = &getAnalysis<LiveRegMatrix>();
 
         for (MachineBasicBlock &b : f) {
             auto c = for_each(b.begin(), b.end(),
@@ -522,6 +525,7 @@ struct LoadMerger : public MachineFunctionPass {
 
     void getAnalysisUsage(AnalysisUsage &a) const override {
         a.addRequired<LiveIntervals>();
+        a.addRequired<LiveRegMatrix>();
         a.addRequired<VirtRegMap>();
         a.setPreservesAll();
         return MachineFunctionPass::getAnalysisUsage(a);
