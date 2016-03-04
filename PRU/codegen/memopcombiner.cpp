@@ -255,6 +255,17 @@ struct RegMask {
     unsigned mask8;
 };
 
+unsigned reg_at_pos(unsigned offset, MemLoc::OpSize size) {
+    switch (size) {
+    case MemLoc::Byte:
+        return all_reg8s[offset];
+    case MemLoc::Word:
+        return all_reg16s[(offset / 4) * 3 + (offset % 4)];
+    case MemLoc::DWord:
+        return all_reg32s[offset / 4];
+    }
+}
+
 static std::map<unsigned, RegMask> build_masks() {
     std::map<unsigned, RegMask> rv;
     for (unsigned i = 0; i < len(all_reg8s); ++i) {
