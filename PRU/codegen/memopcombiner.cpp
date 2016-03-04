@@ -300,23 +300,29 @@ struct FreeRegs {
     FreePlaces free16;
     FreePlaces free8;
 
-    FreeRegs()
+    FreeRegs(const MachineFunction &f)
         : free32(mask_for(MemLoc::DWord)), free16(mask_for(MemLoc::Word)),
           free8(mask_for(MemLoc::Byte)) {
-        add_live(PRU::r2);
-        add_live(PRU::r3);
-        add_live(PRU::r4);
-        add_live(PRU::r5);
-        add_live(PRU::r6);
-        add_live(PRU::r7);
-        add_live(PRU::r8);
-        add_live(PRU::r9);
-        add_live(PRU::r10);
-        add_live(PRU::r11);
-        add_live(PRU::r12);
-        add_live(PRU::r13);
-        add_live(PRU::r30);
-        add_live(PRU::r31);
+        const auto &tri = *f.getSubtarget().getRegisterInfo();
+        BitVector reserved = tri.getReservedRegs(f);
+        for (unsigned reg = 0; reg < PRU::NUM_TARGET_REGS; reg += 1) {
+            if (reg_mask.find(reg) != reg_mask.end() && reserved.test(reg)) {
+                dbgs() << "reserved reg: " << tri.getName(reg) << "\n";
+                add_live(reg);
+            }
+        }
+
+        BitVector usable_cs;
+        f.getSubtarget().getFrameLowering()->determineCalleeSaves(
+            const_cast<MachineFunction &>(f), usable_cs, nullptr);
+        const MCPhysReg *csregs = tri.getCalleeSavedRegs(&f);
+        for (unsigned i = 0; csregs[i] != 0; i += 1) {
+            if (!usable_cs.test(csregs[i])) {
+                dbgs() << "unusable callee saved reg: "
+                       << tri.getName(csregs[i]) << "\n";
+                add_live(csregs[i]);
+            }
+        }
     }
 
     void add_live(unsigned preg) {
@@ -409,7 +415,8 @@ struct LoadMerger : public MachineFunctionPass {
         return make_range(IntervalIter{*li, 0}, {*li, mri->getNumVirtRegs()});
     }
 
-    pair<FreePlaces, bool> place_next(const MemLoc &cand, const Segment &seg) {
+    pair<FreePlaces, bool> place_next(const MachineFunction &f,
+                                      const MemLoc &cand, const Segment &seg) {
         dbgs() << "placing " << cand;
         bool at_msb = cand.start == seg.ops.back().end + 1;
         bool at_lsb = cand.end + 1 == seg.ops.front().start;
@@ -434,13 +441,14 @@ struct LoadMerger : public MachineFunctionPass {
         SlotRange newlive = covering(cand).convex(seg.live);
         dbgs() << "current live: " << seg.live << " `convex` " << covering(cand)
                << " = " << newlive << "\n";
-        FreeRegs f = free_within(newlive.s, newlive.e, ks);
-        dbgs() << "free slots: " << f << "\n";
-        return make_pair(f.fit(new_cluster), at_msb);
+        FreeRegs free = free_within(f, newlive.s, newlive.e, ks);
+        dbgs() << "free slots: " << free << "\n";
+        return make_pair(free.fit(new_cluster), at_msb);
     }
 
-    FreeRegs free_within(SlotIndex s, SlotIndex e, vector<unsigned> ks) const {
-        FreeRegs rv;
+    FreeRegs free_within(const MachineFunction &f, SlotIndex s, SlotIndex e,
+                         vector<unsigned> ks) const {
+        FreeRegs rv(f);
         dbgs() << "free_within: free = " << rv << "\n";
         for (LiveInterval &iv : intervals()) {
             if (iv.overlaps(s, e) &&
@@ -480,7 +488,7 @@ struct LoadMerger : public MachineFunctionPass {
                                  covering(memops[0])};
                     memops.erase(memops.begin());
                     for (auto m = memops.begin(); m != memops.end();) {
-                        auto canplace = place_next(*m, s);
+                        auto canplace = place_next(f, *m, s);
                         if (canplace.first.none()) {
                             ++m;
                         } else {
