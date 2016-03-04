@@ -491,6 +491,7 @@ struct LoadMerger : public MachineFunctionPass {
                                  mask_for(memops[0].size),
                                  covering(memops[0])};
                     memops.erase(memops.begin());
+                    dbgs() << "starting segment with " << *s.ops[0].i;
                     for (auto m = memops.begin(); m != memops.end();) {
                         auto canplace = place_next(f, *m, s);
                         if (canplace.first.none()) {
@@ -502,10 +503,11 @@ struct LoadMerger : public MachineFunctionPass {
                                 s.ops.insert(s.ops.begin(), *m);
                             }
                             s.len_bytes += m->size;
-                            s.starts &= canplace.first;
+                            s.starts = canplace.first;
                             s.live = s.live.convex(covering(*m));
                             memops.erase(m);
                             m = memops.begin();
+                            dbgs() << "worked: " << s.starts << "\n";
                         }
                     }
                     if (s.ops.size() > 1) {
