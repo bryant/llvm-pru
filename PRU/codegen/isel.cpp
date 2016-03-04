@@ -128,6 +128,10 @@ struct PruISel : public SelectionDAGISel {
             }
             offset = addr.getOperand(1);
             return true;
+        } else {
+            base = addr;
+            offset = CurDAG->getTargetConstant(0, SDLoc(addr), ptrvt);
+            return true;
         }
 
         return false;
