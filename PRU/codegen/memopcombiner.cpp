@@ -112,13 +112,13 @@ struct MemLoc {
         switch (l.kind) {
         case MemLoc::BaseOffset:
             o << "BaseOffset(" << l.base << ", " << l.start << ", " << l.end
-              << ") " << l.i;
+              << ") " << *l.i;
             return o;
         case MemLoc::FrameSlot:
-            o << "FrameSlot(" << l.start << ", " << l.end << ") " << l.i;
+            o << "FrameSlot(" << l.start << ", " << l.end << ") " << *l.i;
             return o;
         default:
-            o << "AlwaysAliases " << l.i;
+            o << "AlwaysAliases " << *l.i;
             return o;
         }
     }
