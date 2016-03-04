@@ -451,8 +451,9 @@ struct LoadMerger : public MachineFunctionPass {
         FreeRegs rv(f);
         dbgs() << "free_within: free = " << rv << "\n";
         for (LiveInterval &iv : intervals()) {
-            if (iv.overlaps(s, e) &&
+            if (vmap->hasPhys(iv.reg) && iv.overlaps(s, e) &&
                 std::find(ks.begin(), ks.end(), iv.reg) == ks.end()) {
+                dbgs() << "found live range that intersects: " << iv << "\n";
                 dbgs() << "clearing " << tri->getName(vmap->getPhys(iv.reg))
                        << " with range of " << iv.beginIndex() << ", "
                        << iv.endIndex() << "\n";
