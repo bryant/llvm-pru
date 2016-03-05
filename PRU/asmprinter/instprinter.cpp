@@ -25,11 +25,9 @@ void PRUInstPrinter::print_addr(const MCInst *inst, unsigned opnum,
     out << getRegisterName(base_reg.getReg()) << ", ";
     if (offset.isImm()) {
         out << formatImm(offset.getImm());
-    }
-    else if (offset.isReg()) {
+    } else if (offset.isReg()) {
         out << getRegisterName(offset.getReg());
-    }
-    else {
+    } else {
         llvm_unreachable("offset operand was neither imm nor reg!");
     }
 }
@@ -68,7 +66,7 @@ void PRUInstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
         O << formatHex(val);
     } else {
         assert(Op.isExpr() && "unknown operand kind in printOperand");
-        //O << '#';
+        // O << '#';
         Op.getExpr()->print(O, &MAI);
     }
 }
