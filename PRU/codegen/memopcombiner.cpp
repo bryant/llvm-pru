@@ -45,7 +45,11 @@ struct MemLoc {
     Offset start;
     Offset end;
     OpSize size;
-    BaseReg base;
+
+    union {
+        BaseReg base;
+        int fi;
+    };
 
     static OpSize op_size(const MachineInstr &i) {
         auto r = static_cast<Offset>((*i.memoperands_begin())->getSize());
@@ -62,22 +66,22 @@ struct MemLoc {
     }
 
     static MemLoc from_mi(MachineInstr &ii) {
+        MemLoc rv;
         if (ii.getOperand(1).isReg() && ii.getOperand(2).isImm()) {
-            Offset s = ii.getOperand(2).getImm();
-            BaseReg b = ii.getOperand(1).getReg();
-            return {BaseOffset, &ii, s, s + op_size(ii) - 1, op_size(ii), b};
-        } else if (ii.getOperand(1).isFI()) {
-            // TODO: this duplicates logic in eliminateFrameIndex
-            int fi = ii.getOperand(1).getIndex();
-            const MachineFrameInfo &frinfo =
-                *ii.getParent()->getParent()->getFrameInfo();
-            Offset s = frinfo.getStackSize() + frinfo.getObjectOffset(fi) +
-                       ii.getOperand(2).getImm();
-            return {FrameSlot,           &ii,         s,
-                    s + op_size(ii) - 1, op_size(ii), PRU::r2};
+            rv.kind = BaseOffset;
+            rv.base = ii.getOperand(1).getReg();
+        } else if (ii.getOperand(1).isFI() && ii.getOperand(2).isImm()) {
+            rv.fi = ii.getOperand(1).getIndex();
+            rv.kind = FrameSlot;
         } else {
             return {AlwaysAliases, &ii};
         }
+
+        rv.i = &ii;
+        rv.start = ii.getOperand(2).getImm();
+        rv.size = op_size(ii);
+        rv.end = rv.start + rv.size - 1;
+        return rv;
     }
 
     bool could_alias(const MemLoc &other) const {
@@ -87,16 +91,24 @@ struct MemLoc {
         }
 
         if (kind == BaseOffset) {
-            if (base == other.base &&
-                !intervals_intersect(start, end, other.start, other.end)) {
-                return false;
+            if (base == other.base) {
+                return intervals_intersect(start, end, other.start, other.end);
             }
-        } else if (kind == FrameSlot &&
-                   !intervals_intersect(start, end, other.start, other.end)) {
+        } else if (kind == FrameSlot) {
+            if (fi == other.fi) {
+                return intervals_intersect(start, end, other.start, other.end);
+            }
             return false;
         }
 
         return true;
+    }
+
+    bool compat_with(const MemLoc &other) const {
+        if (kind == FrameSlot && other.kind == FrameSlot && other.fi != fi) {
+            return false;
+        }
+        return !could_alias(other);
     }
 
     bool operator<(const MemLoc &other) {
@@ -116,7 +128,8 @@ struct MemLoc {
               << ") " << *l.i;
             return o;
         case MemLoc::FrameSlot:
-            o << "FrameSlot(" << l.start << ", " << l.end << ") " << *l.i;
+            o << "FrameSlot(" << l.fi << ", " << l.start << ", " << l.end
+              << ") " << *l.i;
             return o;
         default:
             o << "AlwaysAliases " << *l.i;
@@ -130,8 +143,8 @@ struct Cluster {
     unsigned index;
 
     bool can_accept(const MemLoc &loc) const {
-        return none_of(memops.begin(), memops.end(), [&](MemLoc l) {
-            bool rv = loc.could_alias(l);
+        return all_of(memops.begin(), memops.end(), [&](MemLoc l) {
+            bool rv = loc.compat_with(l);
             return rv;
         });
     }
