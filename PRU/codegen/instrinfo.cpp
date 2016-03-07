@@ -143,6 +143,10 @@ bool PRUInstrInfo::is_store(unsigned opc) {
     return false;
 }
 
+bool PRUInstrInfo::is_store_multiple(unsigned opc) {
+    return opc == PRU::sbbo_multiple;
+}
+
 void PRUInstrInfo::storeRegToStackSlot(MachineBasicBlock &b,
                                        MachineBasicBlock::iterator insert_point,
                                        unsigned reg, bool kill, int frameindex,

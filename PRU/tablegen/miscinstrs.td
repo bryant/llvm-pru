@@ -54,6 +54,14 @@ def sbbo_r8 : Instruction {
     let Pattern = [(store i8: $r, addr: $memloc)];
 }
 
+def sbbo_multiple : Instruction {
+    let InOperandList = (ins addr: $memloc, i8imm: $bytes, reglist: $regs,
+                             variable_ops);
+    let OutOperandList = (outs);
+    let AsmString = "SBBO &$regs, $memloc, $bytes";
+    let Pattern = [];
+}
+
 let isReMaterializable = 1 in {
 def lbbo_r32 : Instruction {
     let InOperandList = (ins addr: $memloc);
