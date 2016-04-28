@@ -64,8 +64,8 @@ vector<vector<unsigned>> alloc_subregs(unsigned reg, ArrayRef<ArgTy> members,
     auto inc_offset = [](unsigned &off, unsigned bits, unsigned &parentreg,
                          const PRURegisterInfo &r) {
         off += bits;
-        if (off >= r.reg_size(parentreg)) {
-            off -= r.reg_size(parentreg);
+        if (off >= r.reg_size_bits(parentreg)) {
+            off -= r.reg_size_bits(parentreg);
             parentreg += 1;
         }
     };

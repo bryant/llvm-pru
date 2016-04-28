@@ -73,18 +73,9 @@ unsigned PRURegisterInfo::getFrameRegister(const MachineFunction &MF) const {
     return PRU::r2;
 }
 
-unsigned PRURegisterInfo::reg_size(unsigned regnum) const {
-    for (auto cls = regclass_begin(); cls != regclass_end(); ++cls) {
-        if ((*cls)->contains(regnum)) {
-            return (*cls)->getSize() * 8;
-        }
-    }
-    llvm_unreachable("invalid register!");
-}
-
 unsigned PRURegisterInfo::find_subreg_in(unsigned reg, unsigned offset,
                                          unsigned bits) const {
-    if (reg_size(reg) == bits && offset == 0) {
+    if (reg_size_bits(reg) == bits && offset == 0) {
         return reg;
     }
     for (MCSubRegIndexIterator idx(reg, this); idx.isValid(); ++idx) {
@@ -119,3 +110,40 @@ const std::vector<MCPhysReg> PRURegisterInfo::i32_arg_regs() const {
                                            i32_args_SaveList + len);
     return rv;
 }
+
+std::vector<PRURegisterInfo::RegInfo> PRURegisterInfo::build_infos() {
+    std::vector<PRURegisterInfo::RegInfo> rv(PRU::NUM_TARGET_REGS, {Byte, 0});
+
+    rv[PRU::b0] = {Byte, 0};
+    rv[PRU::b1] = {Byte, 1};
+    rv[PRU::b2] = {Byte, 2};
+    rv[PRU::b3] = {Byte, 3};
+
+    for (unsigned i = 0; i < len(all_reg8_SaveList); i += 1) {
+        rv[all_reg8_SaveList[i]] = {RegSize::Byte, i};
+    }
+    for (unsigned w = 0, i = 0; i < len(all_reg16_SaveList); w += 1) {
+        if (w % 4 != 3) { // w0, w1, w2, but not "w3"
+            rv[all_reg16_SaveList[i]] = {RegSize::Word, w};
+            i += 1;
+        }
+    }
+    for (unsigned i = 0; i < len(all_reg32_SaveList); ++i) {
+        rv[all_reg32_SaveList[i]] = {RegSize::DWord, i * 4};
+    }
+    return rv;
+}
+
+unsigned PRURegisterInfo::reg_at_pos(unsigned offset, RegSize size) {
+    switch (size) {
+    case RegSize::Byte:
+        return all_reg8_SaveList[offset];
+    case RegSize::Word:
+        return all_reg16_SaveList[(offset / 4) * 3 + (offset % 4)];
+    case RegSize::DWord:
+        return all_reg32_SaveList[offset / 4];
+    }
+}
+
+const std::vector<PRURegisterInfo::RegInfo> PRURegisterInfo::reginfos =
+    build_infos();
