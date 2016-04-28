@@ -11,3 +11,15 @@ def i16_args : CalleeSavedRegs<
 >;
 
 def i32_args : CalleeSavedRegs<(sequence "r%d", 14, 29)>;
+
+def all_reg8 : CalleeSavedRegs<
+    (interleave (sequence "r%d_b0", 0, 31), (sequence "r%d_b1", 0, 31),
+                (sequence "r%d_b2", 0, 31), (sequence "r%d_b3", 0, 31))
+>;
+
+def all_reg16: CalleeSavedRegs<
+    (interleave (sequence "r%d_w0", 0, 31), (sequence "r%d_w1", 0, 31),
+                (sequence "r%d_w2", 0, 31))
+>;
+
+def all_reg32: CalleeSavedRegs<(sequence "r%d", 0, 31)>;
