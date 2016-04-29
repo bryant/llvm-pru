@@ -23,12 +23,6 @@ bool PRUFrameLowering::hasFP(const MachineFunction &MF) const {
             MFI->isFrameAddressTaken());
 }
 
-/*
-bool PRUFrameLowering::hasReservedCallFrame(const MachineFunction &MF) const {
-    return !MF.getFrameInfo()->hasVarSizedObjects();
-}
-*/
-
 bool PRUFrameLowering::spillCalleeSavedRegisters(
     MachineBasicBlock &b, MachineBasicBlock::iterator ii,
     const std::vector<CalleeSavedInfo> &csi,
