@@ -147,6 +147,40 @@ bool PRUInstrInfo::is_store_multiple(unsigned opc) {
     return opc == PRU::sbbo_multiple;
 }
 
+bool PRUInstrInfo::is_reg_imm_add(unsigned opc) {
+    switch (opc) {
+    case PRU::pru_add_reg8_reg8_i8imm:
+    case PRU::pru_add_reg8_reg8_i16imm:
+    case PRU::pru_add_reg8_reg8_i32imm:
+    case PRU::pru_add_reg8_reg16_i8imm:
+    case PRU::pru_add_reg8_reg16_i16imm:
+    case PRU::pru_add_reg8_reg16_i32imm:
+    case PRU::pru_add_reg8_reg32_i8imm:
+    case PRU::pru_add_reg8_reg32_i16imm:
+    case PRU::pru_add_reg8_reg32_i32imm:
+    case PRU::pru_add_reg16_reg8_i8imm:
+    case PRU::pru_add_reg16_reg8_i16imm:
+    case PRU::pru_add_reg16_reg8_i32imm:
+    case PRU::pru_add_reg16_reg16_i8imm:
+    case PRU::pru_add_reg16_reg16_i16imm:
+    case PRU::pru_add_reg16_reg16_i32imm:
+    case PRU::pru_add_reg16_reg32_i8imm:
+    case PRU::pru_add_reg16_reg32_i16imm:
+    case PRU::pru_add_reg16_reg32_i32imm:
+    case PRU::pru_add_reg32_reg8_i8imm:
+    case PRU::pru_add_reg32_reg8_i16imm:
+    case PRU::pru_add_reg32_reg8_i32imm:
+    case PRU::pru_add_reg32_reg16_i8imm:
+    case PRU::pru_add_reg32_reg16_i16imm:
+    case PRU::pru_add_reg32_reg16_i32imm:
+    case PRU::pru_add_reg32_reg32_i8imm:
+    case PRU::pru_add_reg32_reg32_i16imm:
+    case PRU::pru_add_reg32_reg32_i32imm:
+        return true;
+    }
+    return false;
+}
+
 void PRUInstrInfo::storeRegToStackSlot(MachineBasicBlock &b,
                                        MachineBasicBlock::iterator insert_point,
                                        unsigned reg, bool kill, int frameindex,

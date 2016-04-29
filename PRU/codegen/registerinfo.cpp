@@ -57,6 +57,11 @@ void PRURegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
 
     MachineInstr &i = *II;
     MachineFrameInfo &mf = *i.getParent()->getParent()->getFrameInfo();
+    assert(PRUInstrInfo::is_load(i.getOpcode()) ||
+           PRUInstrInfo::is_load_multiple(i.getOpcode()) ||
+           PRUInstrInfo::is_store(i.getOpcode()) ||
+           PRUInstrInfo::is_store_multiple(i.getOpcode()) ||
+           PRUInstrInfo::is_reg_imm_add(i.getOpcode()));
 
     int idx = i.getOperand(FIOperandNum).getIndex();
 

@@ -70,5 +70,7 @@ class PRUInstrInfo : public PRUGenInstrInfo {
     static bool is_store_multiple(unsigned opc);
 
     static bool is_store(unsigned opc);
+
+    static bool is_reg_imm_add(unsigned opc);
 };
 }
