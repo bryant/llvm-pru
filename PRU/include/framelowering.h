@@ -18,6 +18,11 @@ class PRUFrameLowering : public TargetFrameLowering {
                                    const std::vector<CalleeSavedInfo> &,
                                    const TargetRegisterInfo *) const override;
 
+    bool restoreCalleeSavedRegisters(MachineBasicBlock &,
+                                     MachineBasicBlock::iterator,
+                                     const std::vector<CalleeSavedInfo> &,
+                                     const TargetRegisterInfo *) const override;
+
     bool
     assignCalleeSavedSpillSlots(MachineFunction &, const TargetRegisterInfo *,
                                 std::vector<CalleeSavedInfo> &) const override;

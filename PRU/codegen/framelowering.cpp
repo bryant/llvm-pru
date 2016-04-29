@@ -23,11 +23,10 @@ bool PRUFrameLowering::hasFP(const MachineFunction &MF) const {
             MFI->isFrameAddressTaken());
 }
 
-bool PRUFrameLowering::spillCalleeSavedRegisters(
-    MachineBasicBlock &b, MachineBasicBlock::iterator ii,
-    const std::vector<CalleeSavedInfo> &csi,
-    const TargetRegisterInfo *tri) const {
-
+static void batched_csr_ops(MachineBasicBlock &b,
+                            MachineBasicBlock::iterator ii,
+                            const std::vector<CalleeSavedInfo> &csi,
+                            const TargetRegisterInfo *tri, unsigned opcode) {
     auto &tii = *b.getParent()->getSubtarget().getInstrInfo();
 
     for (auto c = csi.cbegin(); c != csi.cend();) {
@@ -44,7 +43,7 @@ bool PRUFrameLowering::spillCalleeSavedRegisters(
             ++c;
         }
         const MachineInstrBuilder &batch =
-            BuildMI(b, ii, b.findDebugLoc(ii), tii.get(PRU::sbbo_multiple))
+            BuildMI(b, ii, b.findDebugLoc(ii), tii.get(opcode))
                 .addFrameIndex(cc->getFrameIdx())
                 .addImm(0)
                 .addImm(store_size);
@@ -52,6 +51,23 @@ bool PRUFrameLowering::spillCalleeSavedRegisters(
             batch.addReg(cc->getReg(), getDefRegState(true));
         }
     }
+}
+
+bool PRUFrameLowering::spillCalleeSavedRegisters(
+    MachineBasicBlock &b, MachineBasicBlock::iterator ii,
+    const std::vector<CalleeSavedInfo> &csi,
+    const TargetRegisterInfo *tri) const {
+
+    batched_csr_ops(b, ii, csi, tri, PRU::sbbo_multiple);
+    return true;
+}
+
+bool PRUFrameLowering::restoreCalleeSavedRegisters(
+    MachineBasicBlock &b, MachineBasicBlock::iterator ii,
+    const std::vector<CalleeSavedInfo> &csi,
+    const TargetRegisterInfo *tri) const {
+
+    batched_csr_ops(b, ii, csi, tri, PRU::lbbo_multiple);
     return true;
 }
 
