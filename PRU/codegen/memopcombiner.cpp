@@ -30,6 +30,7 @@ using std::function;
 
 using BaseReg = unsigned;
 using Offset = int64_t;
+using RegSize = PRURegisterInfo::RegSize;
 
 template <typename T> bool intervals_intersect(T s0, T e0, T s1, T e1) {
     bool rv = !(s0 > e1 || e0 < s1);
@@ -336,7 +337,7 @@ struct FreeRegs {
              reg += 1) {
             if (reserved.test(reg)) {
                 dbgs() << "reserved reg: " << tri.getName(reg) << "\n";
-                add_live(reg);
+                add_live_one(reg);
             }
         }
 
@@ -353,14 +354,24 @@ struct FreeRegs {
         }
     }
 
+    void add_live_one(unsigned physreg) {
+        switch (tri.reg_size(physreg)) {
+        case RegSize::Byte:
+            free8 &= ~(RegBits(1) << tri.reg_offset(physreg));
+            break;
+        case RegSize::Word:
+            free16 &= ~(RegBits(1) << tri.reg_offset(physreg));
+            break;
+        case RegSize::DWord:
+            free32 &= ~(RegBits(1) << tri.reg_offset(physreg));
+            break;
+        }
+    }
+
     void add_live(unsigned preg) {
-        auto rmask = reg_mask.at(preg);
-        auto from_mask = [&](char mask) {
-            return ~(RegBits(mask) << (rmask.shift * 4));
-        };
-        free32 &= from_mask(rmask.mask32);
-        free16 &= from_mask(rmask.mask16);
-        free8 &= from_mask(rmask.mask8);
+        for (MCRegAliasIterator r(preg, &tri, true); r.isValid(); ++r) {
+            add_live_one(*r);
+        }
     }
 
     FreePlaces places_for(const MemLoc &m) const {
