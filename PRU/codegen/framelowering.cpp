@@ -29,6 +29,64 @@ bool PRUFrameLowering::hasReservedCallFrame(const MachineFunction &MF) const {
 }
 */
 
+bool PRUFrameLowering::spillCalleeSavedRegisters(
+    MachineBasicBlock &b, MachineBasicBlock::iterator ii,
+    const std::vector<CalleeSavedInfo> &csi,
+    const TargetRegisterInfo *tri) const {
+
+    auto &tii = *b.getParent()->getSubtarget().getInstrInfo();
+
+    for (auto c = csi.cbegin(); c != csi.cend();) {
+        dbgs() << "caught " << tri->getName(c->getReg()) << " assigned to "
+               << c->getFrameIdx() << "\n";
+        auto cc = c;
+        unsigned store_size = PRURegisterInfo::reg_size(cc->getReg());
+        ++c;
+        while (c != csi.cend() && PRURegisterInfo::are_adjacent(
+                                      c->getReg(), std::prev(c)->getReg())) {
+            dbgs() << "adjacent " << tri->getName(c->getReg())
+                   << " assigned to " << c->getFrameIdx() << "\n";
+            store_size += PRURegisterInfo::reg_size(c->getReg());
+            ++c;
+        }
+        const MachineInstrBuilder &batch =
+            BuildMI(b, ii, b.findDebugLoc(ii), tii.get(PRU::sbbo_multiple))
+                .addFrameIndex(cc->getFrameIdx())
+                .addImm(0)
+                .addImm(store_size);
+        for (; cc != c; ++cc) {
+            batch.addReg(cc->getReg(), getDefRegState(true));
+        }
+    }
+    return true;
+}
+
+bool PRUFrameLowering::assignCalleeSavedSpillSlots(
+    MachineFunction &f, const TargetRegisterInfo *tri,
+    std::vector<CalleeSavedInfo> &csi) const {
+
+    auto sort_by_reg_offset = [](const CalleeSavedInfo &a,
+                                 const CalleeSavedInfo &b) {
+        return PRURegisterInfo::reg_offset(a.getReg()) <
+               PRURegisterInfo::reg_offset(b.getReg());
+    };
+
+    std::sort(csi.begin(), csi.end(),
+              [&](const CalleeSavedInfo &a, const CalleeSavedInfo &b) {
+                  return !sort_by_reg_offset(a, b);
+              });
+
+    MachineFrameInfo &mfi = *f.getFrameInfo();
+
+    for (CalleeSavedInfo &c : csi) {
+        c.setFrameIdx(mfi.CreateStackObject(
+            PRURegisterInfo::reg_size(c.getReg()), 1, true));
+    }
+
+    std::sort(csi.begin(), csi.end(), sort_by_reg_offset);
+    return true;
+}
+
 void PRUFrameLowering::emitPrologue(MachineFunction &f,
                                     MachineBasicBlock &b) const {
     if (unsigned stacksize = f.getFrameInfo()->estimateStackSize(f)) {
