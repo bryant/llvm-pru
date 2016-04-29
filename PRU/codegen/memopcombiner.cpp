@@ -254,54 +254,6 @@ raw_ostream &operator<<(raw_ostream &o, const FreePlaces &l) {
     return o;
 }
 
-template <typename T, size_t n> static constexpr size_t len(const T (&xs)[n]) {
-    return n;
-}
-
-// TODO: fix this clunky shit.
-#include "register_lists.h"
-
-struct RegMask {
-    unsigned shift; // position of parent 4-byte
-    unsigned mask32;
-    unsigned mask16;
-    unsigned mask8;
-};
-
-unsigned reg_at_pos(unsigned offset, RegSize size) {
-    switch (size) {
-    case RegSize::Byte:
-        return all_reg8s[offset];
-    case RegSize::Word:
-        return all_reg16s[(offset / 4) * 3 + (offset % 4)];
-    case RegSize::DWord:
-        return all_reg32s[offset / 4];
-    }
-}
-
-static std::map<unsigned, RegMask> build_masks() {
-    std::map<unsigned, RegMask> rv;
-    for (unsigned i = 0; i < len(all_reg8s); ++i) {
-        static const unsigned mask16s[] = {0x01, 0x03, 0x06, 0x04};
-        rv[all_reg8s[i]] = {i / 4, 1, mask16s[i % 4],
-                            static_cast<unsigned>(1 << (i % 4))};
-    }
-    for (unsigned w = 0, i = 0; i < len(all_reg16s); ++w) {
-        static const unsigned mask16s[] = {0x03, 0x07, 0x06};
-        if (w % 4 != 3) { // w0, w1, w2, but not "w3"
-            rv[all_reg16s[i]] = {w / 4, 1, mask16s[w % 4],
-                                 static_cast<unsigned>(0x03 << (w % 4))};
-            i += 1;
-        }
-    }
-    for (unsigned i = 0; i < len(all_reg32s); ++i) {
-        rv[all_reg32s[i]] = {i, 1, 0x07, 0x0f};
-    }
-    return rv;
-}
-
-static const std::map<unsigned, RegMask> reg_mask = build_masks();
-
 template <size_t n> constexpr RegBits bitpat(RegBits pat) {
     return pat << (n * 4) | bitpat<n - 1>(pat);
 }
