@@ -332,8 +332,9 @@ struct FreeRegs {
           tri(*reinterpret_cast<const PRURegisterInfo *>(
               f.getSubtarget().getRegisterInfo())) {
         BitVector reserved = tri.getReservedRegs(f);
-        for (unsigned reg = 0; reg < PRU::NUM_TARGET_REGS; reg += 1) {
-            if (reg_mask.find(reg) != reg_mask.end() && reserved.test(reg)) {
+        for (unsigned reg = PRU::NoRegister + 1; reg < PRU::NUM_TARGET_REGS;
+             reg += 1) {
+            if (reserved.test(reg)) {
                 dbgs() << "reserved reg: " << tri.getName(reg) << "\n";
                 add_live(reg);
             }
