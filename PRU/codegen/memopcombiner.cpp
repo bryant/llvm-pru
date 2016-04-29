@@ -324,11 +324,13 @@ struct FreeRegs {
     FreePlaces free32;
     FreePlaces free16;
     FreePlaces free8;
+    const PRURegisterInfo &tri;
 
     FreeRegs(const MachineFunction &f, const LiveRegMatrix &lrm)
         : free32(mask_for(MemLoc::DWord)), free16(mask_for(MemLoc::Word)),
-          free8(mask_for(MemLoc::Byte)) {
-        const auto &tri = *f.getSubtarget().getRegisterInfo();
+          free8(mask_for(MemLoc::Byte)),
+          tri(*reinterpret_cast<const PRURegisterInfo *>(
+              f.getSubtarget().getRegisterInfo())) {
         BitVector reserved = tri.getReservedRegs(f);
         for (unsigned reg = 0; reg < PRU::NUM_TARGET_REGS; reg += 1) {
             if (reg_mask.find(reg) != reg_mask.end() && reserved.test(reg)) {
