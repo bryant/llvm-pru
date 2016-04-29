@@ -2,6 +2,7 @@
 #include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
+#include "llvm/CodeGen/MachineRegisterInfo.h"
 #include "llvm/IR/Function.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Target/TargetMachine.h"
@@ -52,26 +53,38 @@ PRURegisterInfo::getPointerRegClass(const MachineFunction &MF,
 void PRURegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
                                           int SPAdj, unsigned FIOperandNum,
                                           RegScavenger *RS) const {
-    dbgs() << "eliminateFrameIndex called\n";
     assert(SPAdj == 0 && "Unexpected");
-
     MachineInstr &i = *II;
-    MachineFrameInfo &mf = *i.getParent()->getParent()->getFrameInfo();
     assert(PRUInstrInfo::is_load(i.getOpcode()) ||
            PRUInstrInfo::is_load_multiple(i.getOpcode()) ||
            PRUInstrInfo::is_store(i.getOpcode()) ||
            PRUInstrInfo::is_store_multiple(i.getOpcode()) ||
            PRUInstrInfo::is_reg_imm_add(i.getOpcode()));
+    MachineFunction &f = *i.getParent()->getParent();
+    const MachineFrameInfo &mf = *f.getFrameInfo();
+
+    dbgs() << "eliminateFrameIndex called on ";
+    i.dump();
 
     int idx = i.getOperand(FIOperandNum).getIndex();
-
     int offset = mf.getStackSize() + mf.getObjectOffset(idx) +
                  i.getOperand(FIOperandNum + 1).getImm();
+    dbgs() << "[pru] eliminateFrameIndex objoffset = "
+           << mf.getObjectOffset(idx) << "; offset = " << offset << "\n";
+    if (offset > 256) {
+        const auto &tii = *f.getSubtarget().getInstrInfo();
+        unsigned offreg =
+            f.getRegInfo().createVirtualRegister(&PRU::reg32RegClass);
+        BuildMI(*i.getParent(), i, i.getDebugLoc(),
+                tii.get(PRU::pru_mov_reg32_i32), offreg)
+            .addImm(offset);
+        i.getOperand(FIOperandNum + 1)
+            .ChangeToRegister(offreg, false, false, true);
+    } else {
+        i.getOperand(FIOperandNum + 1).ChangeToImmediate(offset);
+    }
 
-    dbgs() << "[pru] eliminateFrameIndex offset = " << offset << "\n";
-
-    i.getOperand(FIOperandNum).ChangeToRegister(PRU::r2, false);
-    i.getOperand(FIOperandNum + 1).ChangeToImmediate(offset);
+    i.getOperand(FIOperandNum).ChangeToRegister(getFrameRegister(f), false);
 }
 
 unsigned PRURegisterInfo::getFrameRegister(const MachineFunction &MF) const {
