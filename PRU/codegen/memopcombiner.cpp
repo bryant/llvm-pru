@@ -39,28 +39,27 @@ template <typename T> bool intervals_intersect(T s0, T e0, T s1, T e1) {
 
 struct MemLoc {
     enum Kind { BaseOffset, FrameSlot, AlwaysAliases };
-    enum OpSize { Byte = 1, Word = 2, DWord = 4 };
 
     Kind kind;
     MachineInstr *i;
     Offset start;
     Offset end;
-    OpSize size;
+    RegSize size;
 
     union {
         BaseReg base;
         int fi;
     };
 
-    static OpSize op_size(const MachineInstr &i) {
+    static RegSize op_size(const MachineInstr &i) {
         auto r = static_cast<Offset>((*i.memoperands_begin())->getSize());
         switch (r) {
         case 1:
-            return Byte;
+            return RegSize::Byte;
         case 2:
-            return Word;
+            return RegSize::Word;
         case 4:
-            return DWord;
+            return RegSize::DWord;
         default:
             llvm_unreachable("invalid load size encountered.");
         }
@@ -269,13 +268,13 @@ struct RegMask {
     unsigned mask8;
 };
 
-unsigned reg_at_pos(unsigned offset, MemLoc::OpSize size) {
+unsigned reg_at_pos(unsigned offset, RegSize size) {
     switch (size) {
-    case MemLoc::Byte:
+    case RegSize::Byte:
         return all_reg8s[offset];
-    case MemLoc::Word:
+    case RegSize::Word:
         return all_reg16s[(offset / 4) * 3 + (offset % 4)];
-    case MemLoc::DWord:
+    case RegSize::DWord:
         return all_reg32s[offset / 4];
     }
 }
@@ -309,13 +308,13 @@ template <size_t n> constexpr RegBits bitpat(RegBits pat) {
 
 template <> constexpr RegBits bitpat<0>(RegBits pat) { return pat; }
 
-FreePlaces mask_for(MemLoc::OpSize size) {
+FreePlaces mask_for(RegSize size) {
     switch (size) {
-    case MemLoc::Byte:
+    case RegSize::Byte:
         return bitpat<32>(RegBits("1111"));
-    case MemLoc::Word:
+    case RegSize::Word:
         return bitpat<32>(RegBits("0111"));
-    case MemLoc::DWord:
+    case RegSize::DWord:
         return bitpat<32>(RegBits("0001"));
     }
 }
@@ -328,8 +327,8 @@ struct FreeRegs {
     const PRURegisterInfo &tri;
 
     FreeRegs(const MachineFunction &f, const LiveRegMatrix &lrm)
-        : free32(mask_for(MemLoc::DWord)), free16(mask_for(MemLoc::Word)),
-          free8(mask_for(MemLoc::Byte)),
+        : free32(mask_for(RegSize::DWord)), free16(mask_for(RegSize::Word)),
+          free8(mask_for(RegSize::Byte)),
           tri(*reinterpret_cast<const PRURegisterInfo *>(
               f.getSubtarget().getRegisterInfo())) {
         BitVector reserved = tri.getReservedRegs(f);
@@ -376,11 +375,11 @@ struct FreeRegs {
 
     FreePlaces places_for(const MemLoc &m) const {
         switch (m.size) {
-        case MemLoc::Byte:
+        case RegSize::Byte:
             return free8 & mask_for(m.size);
-        case MemLoc::Word:
+        case RegSize::Word:
             return free16 & mask_for(m.size);
-        case MemLoc::DWord:
+        case RegSize::DWord:
             return free32 & mask_for(m.size);
         }
     }
@@ -445,7 +444,7 @@ struct LoadMerger : public MachineFunctionPass {
     VirtRegMap *vmap;
     LiveRegMatrix *lrm;
     const MachineRegisterInfo *mri;
-    const TargetRegisterInfo *tri;
+    const PRURegisterInfo *tri;
 
     LoadMerger() : MachineFunctionPass(id) {}
 
@@ -514,7 +513,8 @@ struct LoadMerger : public MachineFunctionPass {
         li = &getAnalysis<LiveIntervals>();
         vmap = &getAnalysis<VirtRegMap>();
         mri = &f.getRegInfo();
-        tri = f.getSubtarget().getRegisterInfo();
+        tri = reinterpret_cast<const PRURegisterInfo *>(
+            f.getSubtarget().getRegisterInfo());
         const TargetInstrInfo &tii = *f.getSubtarget().getInstrInfo();
         lrm = &getAnalysis<LiveRegMatrix>();
 
@@ -589,7 +589,7 @@ struct LoadMerger : public MachineFunctionPass {
                             unsigned destreg = dest.getReg();
                             destvregs.push_back(destreg);
 
-                            unsigned preg = reg_at_pos(pos, memop.size);
+                            unsigned preg = tri->reg_at_pos(pos, memop.size);
                             dbgs() << "reassigning " << dest << ": "
                                    << tri->getName(vmap->getPhys(destreg))
                                    << " => " << tri->getName(preg) << "\n";
