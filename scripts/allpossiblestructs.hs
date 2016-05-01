@@ -25,20 +25,26 @@ braced xs = "{\n" ++ xs ++ "}"
 
 indent n xs = map (spaces ++) xs where spaces = replicate n ' '
 
-gen_fn structname mems = decl ++ stmts ++ "\n"
+gen_fn structname mems = braced . unlines . indent 4 $ adds ++ ["return s;"]
     where
-    decl = concat [structname, " mk", structname, "(unsigned char p, ",
-                   structname, " s) "]
-    stmts = braced . unlines . indent 4 $ adds ++ ["return s;"]
     adds = ["s.p" ++ show n ++ " += " ++ show (n + 1) ++ ";"
            | n <- [0..length mems - 1]]
 
 structs = unlines . (prelude ++ )
-                  . zipWith mkstruct [0..] $ concatMap struct_of_size [1..9]
+                  . zipWith mktestcase [0..] $ concatMap struct_of_size [1..9]
     where
+    mktestcase idx mems = mkstruct idx mems ++ "\n\n" ++ mkfn idx mems ++ "\n"
+
     mkstruct idx mems =
-        concat ["typedef struct ", gen_members mems, " S", show idx, ";\n"] ++
-        "\n" ++ gen_fn ("S" ++ show idx) mems
+        concat ["typedef struct ", gen_members mems, " S", show idx, ";"]
+
+    mkfn idx mems = decl ++ " " ++ gen_fn structname mems
+        where
+        decl = concat [structname, " ", fnname, "(unsigned char p, ",
+                       structname, " s)"]
+        fnname = "mk" ++ structname
+        structname = "S" ++ show idx
+
     prelude = ["#pragma pack(1)"]
 
 main = putStrLn structs
