@@ -1,3 +1,7 @@
+NUM_CPU=$(grep ^processor /proc/cpuinfo | wc -l)
+
+echo "Building with $NUM_CPU cpus"
+
 cmake -G Ninja \
     -D BUILD_SHARED_LIBS=ON \
     -D CMAKE_C_COMPILER=clang \
@@ -8,8 +12,8 @@ cmake -G Ninja \
     -D LLVM_TARGETS_TO_BUILD="PRU;ARM;X86;MSP430" \
     -D LLVM_BUILD_RUNTIME=OFF \
     -D LLVM_ENABLE_ASSERTIONS=ON \
-    -D LLVM_PARALLEL_COMPILE_JOBS=4 \
-    -D LLVM_PARALLEL_LINK_JOBS=4 \
+    -D LLVM_PARALLEL_COMPILE_JOBS=$NUM_CPU \
+    -D LLVM_PARALLEL_LINK_JOBS=$NUM_CPU \
     -D LLVM_TOOL_BUGPOINT_BUILD=OFF \
     -D LLVM_TOOL_GOLD_BUILD=OFF \
     -D LLVM_TOOL_LLI_BUILD=OFF \
