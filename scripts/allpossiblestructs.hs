@@ -40,3 +40,5 @@ structs = unlines . (prelude ++ )
         concat ["typedef struct ", gen_members mems, " S", show idx, ";\n"] ++
         "\n" ++ gen_fn ("S" ++ show idx) mems
     prelude = ["#pragma pack(1)"]
+
+main = putStrLn structs
