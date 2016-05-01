@@ -13,7 +13,8 @@ split_barriers bars = case split_while (/= '1') bars of
 split_while pred xs = (takeWhile pred xs, dropWhile pred xs)
 
 gen_members :: [Int] -> String
-gen_members = braced . unlines . map (++ ";") . zipWith to_member [0..]
+gen_members = braced . unlines . indent 4 . map (++ ";")
+                     . zipWith to_member [0..]
     where
     to_member idx k = int_ty k ++ " p" ++ show idx
     int_ty 1 = "unsigned char"
@@ -22,12 +23,15 @@ gen_members = braced . unlines . map (++ ";") . zipWith to_member [0..]
 
 braced xs = "{\n" ++ xs ++ "}"
 
-gen_fn structname mems = decl ++ stmts ++ " return s; }\n"
+indent n xs = map (spaces ++) xs where spaces = replicate n ' '
+
+gen_fn structname mems = decl ++ stmts ++ "\n"
     where
     decl = concat [structname, " mk", structname, "(unsigned char p, ",
-                   structname, " s) {"]
-    stmts = concat ["s.p" ++ show n ++ " += " ++ show (n + 1) ++ "; "
-                   | n <- [0..length mems - 1]]
+                   structname, " s) "]
+    stmts = braced . unlines . indent 4 $ adds ++ ["return s;"]
+    adds = ["s.p" ++ show n ++ " += " ++ show (n + 1) ++ ";"
+           | n <- [0..length mems - 1]]
 
 structs = unlines . (prelude ++ )
                   . zipWith mkstruct [0..] $ concatMap struct_of_size [1..9]
