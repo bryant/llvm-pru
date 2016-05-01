@@ -1,0 +1,173 @@
+--- a/include/clang/Basic/Attr.td	2016-05-01 06:25:49.202653899 +0000
++++ b/include/clang/Basic/Attr.td	2015-12-11 21:20:28.300327636 +0000
+@@ -258,6 +258,7 @@
+ def TargetMicrosoftCXXABI : TargetArch<["x86", "x86_64", "arm", "thumb"]> {
+   let CXXABIs = ["Microsoft"];
+ }
++def TargetPRU : TargetArch<["pru"]>;
+ 
+ class Attr {
+   // The various ways in which an attribute can be spelled in source
+--- a/lib/CodeGen/TargetInfo.cpp	2016-05-01 06:25:04.189367820 +0000
++++ b/lib/CodeGen/TargetInfo.cpp	2016-02-13 11:36:55.189938988 +0000
+@@ -6754,6 +6724,71 @@
+ }
+ 
+ //===----------------------------------------------------------------------===//
++// PRU ABI Implementation
++//===----------------------------------------------------------------------===//
++
++namespace {
++
++class PRUABIInfo : public DefaultABIInfo {
++public:
++  PRUABIInfo(CodeGenTypes &c) : DefaultABIInfo(c) {}
++
++  ABIArgInfo classify(QualType argty) const {
++    if (isAggregateTypeForABI(argty)) {
++      if (isEmptyRecord(getContext(), argty, true)) {
++        return ABIArgInfo::getIgnore();
++      }
++
++      // clpru's very convoluted struct passing rules:
++      // (pack, num_i32s_in_reg_block)  -- pack only if within same reg32
++      //     | struct_size <= 2 = (True, Just 1)
++      //     | struct_size <= 4 = (False, Just 1)
++      //     | struct_size == 8 = (False, Just 2)
++      //     | otherwise = (False, Nothing)  -- stored to stack
++      auto tysize = getContext().getTypeSize(argty);
++      /*
++      if (tysize == 8) {
++        return ABIArgInfo::getDirect(llvm::Type::getInt8Ty(getVMContext()));
++      } else if (tysize == 16) {
++        return ABIArgInfo::getDirect(llvm::Type::getInt16Ty(getVMContext()));
++      } else if (tysize == 24 || tysize == 32) {
++        return ABIArgInfo::getDirect(llvm::Type::getInt32Ty(getVMContext()));
++        //auto i8 = llvm::Type::getInt8Ty(getVMContext());
++        //return ABIArgInfo::getDirect(llvm::ArrayType::get(i8, 4));
++      } else if (tysize == 64) {
++        return ABIArgInfo::getDirect(llvm::Type::getInt64Ty(getVMContext()));
++      }*/
++      if (tysize <= 32 || tysize == 64) {
++        return ABIArgInfo::getDirect(nullptr, 0, nullptr, false);
++      } else {
++        return getNaturalAlignIndirect(argty);
++      }
++    }
++    if (const EnumType *EnumTy = argty->getAs<EnumType>()) {
++      argty = EnumTy->getDecl()->getIntegerType();
++    }
++    return (argty->isPromotableIntegerType() ? ABIArgInfo::getExtend()
++                                             : ABIArgInfo::getDirect());
++  }
++
++  void computeInfo(CGFunctionInfo &FI) const override {
++    if (!getCXXABI().classifyReturnType(FI)) {
++      FI.getReturnInfo() = classify(FI.getReturnType());
++    }
++    for (auto &I : FI.arguments()) {
++      I.info = classify(useFirstFieldIfTransparentUnion(I.type));
++    }
++  }
++};
++
++class PRUTargetCodeGenInfo : public TargetCodeGenInfo {
++public:
++  PRUTargetCodeGenInfo(CodeGenTypes &CGT)
++      : TargetCodeGenInfo(new PRUABIInfo(CGT)) {}
++};
++}
++
++//===----------------------------------------------------------------------===//
+ // XCore ABI Implementation
+ //===----------------------------------------------------------------------===//
+ 
+@@ -7529,5 +7563,8 @@
+     return *(TheTargetCodeGenInfo = new SparcV9TargetCodeGenInfo(Types));
+   case llvm::Triple::xcore:
+     return *(TheTargetCodeGenInfo = new XCoreTargetCodeGenInfo(Types));
++
++  case llvm::Triple::pru:
++    return *(TheTargetCodeGenInfo = new PRUTargetCodeGenInfo(Types));
+   }
+ }
+--- a/lib/Basic/Targets.cpp	2016-05-01 06:22:08.732953960 +0000
++++ b/lib/Basic/Targets.cpp	2016-05-01 06:22:15.629117157 +0000
+@@ -7219,6 +7148,67 @@
+   }
+ };
+ 
++class PRUTargetInfo : public TargetInfo {
++public:
++  PRUTargetInfo(const llvm::Triple &Triple) : TargetInfo(Triple) {
++    BigEndian = false;
++    TLSSupported = false;
++    IntWidth = 32;
++    IntAlign = 8;
++    LongWidth = 32;
++    LongLongWidth = 64;
++    LongAlign = LongLongAlign = 8;
++    PointerWidth = 32;
++    PointerAlign = 8;
++    BoolWidth = 8;
++    BoolAlign = 8;
++    DefaultAlignForAttributeAligned = 8;
++    MinGlobalAlign = 8;
++    SuitableAlign = 8;
++    SizeType = UnsignedInt;
++    IntMaxType = SignedLongLong;
++    IntPtrType = SignedInt;
++    PtrDiffType = SignedInt;
++    SigAtomicType = SignedLong;
++    MaxTLSAlign = 8;
++    DataLayoutString = "e-S8-p:32:8:8-i32:8:8-i16:8:8-i8:8:8-a:8:8-n8:16:32";
++  }
++  void getTargetDefines(const LangOptions &Opts,
++                        MacroBuilder &Builder) const override {
++    Builder.defineMacro("PRU");
++    Builder.defineMacro("__PRU__");
++  }
++  ArrayRef<Builtin::Info> getTargetBuiltins() const override {
++    // FIXME: Implement.
++    return None;
++  }
++  bool hasFeature(StringRef Feature) const override { return Feature == "pru"; }
++  ArrayRef<TargetInfo::GCCRegAlias> getGCCRegAliases() const override {
++    // No aliases.
++    return None;
++  }
++  const char *getClobbers() const override {
++    // FIXME: Is this really right?
++    return "";
++  }
++  BuiltinVaListKind getBuiltinVaListKind() const override {
++    // FIXME: implement
++    return TargetInfo::CharPtrBuiltinVaList;
++  }
++  bool validateAsmConstraint(const char *&,
++                             TargetInfo::ConstraintInfo &) const override {
++    return false;
++  }
++  ArrayRef<const char *> getGCCRegNames() const override {
++    static const char *const GCCRegNames[] = {
++        "r0",  "r1",  "r2",  "r3",  "r4",  "r5",  "r6",  "r7",
++        "r8",  "r9",  "r10", "r11", "r12", "r13", "r14", "r15",
++        "r16", "r17", "r18", "r19", "r20", "r21", "r22", "r23",
++        "r24", "r25", "r26", "r27", "r28", "r29", "r30", "r31"};
++    return llvm::makeArrayRef(GCCRegNames);
++  }
++};
++
+ class XCoreTargetInfo : public TargetInfo {
+   static const Builtin::Info BuiltinInfo[];
+ 
+@@ -7720,6 +7710,9 @@
+     if (!(Triple == llvm::Triple("wasm64-unknown-unknown")))
+       return nullptr;
+     return new WebAssemblyOSTargetInfo<WebAssembly64TargetInfo>(Triple);
++
++  case llvm::Triple::pru:
++    return new PRUTargetInfo(Triple);
+   }
+ }
+ 

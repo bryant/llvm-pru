@@ -1,0 +1,124 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index be9f850..e8a276f 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -212,6 +212,7 @@ set(LLVM_ALL_TARGETS
+   MSP430
+   NVPTX
+   PowerPC
++  PRU
+   Sparc
+   SystemZ
+   X86
+diff --git a/include/llvm/ADT/Triple.h b/include/llvm/ADT/Triple.h
+index e01db0a..a97aafe 100644
+--- a/include/llvm/ADT/Triple.h
++++ b/include/llvm/ADT/Triple.h
+@@ -62,6 +62,7 @@ public:
+     ppc,        // PPC: powerpc
+     ppc64,      // PPC64: powerpc64, ppu
+     ppc64le,    // PPC64LE: powerpc64le
++    pru,
+     r600,       // R600: AMD GPUs HD2XXX - HD6XXX
+     amdgcn,     // AMDGCN: AMD GCN GPUs
+     sparc,      // Sparc: sparc
+diff --git a/include/llvm/Support/ELF.h b/include/llvm/Support/ELF.h
+index e24420f..908f91b 100644
+--- a/include/llvm/Support/ELF.h
++++ b/include/llvm/Support/ELF.h
+@@ -247,6 +247,7 @@ enum {
+   EM_TI_C6000      = 140, // The Texas Instruments TMS320C6000 DSP family
+   EM_TI_C2000      = 141, // The Texas Instruments TMS320C2000 DSP family
+   EM_TI_C5500      = 142, // The Texas Instruments TMS320C55x DSP family
++  EM_TI_PRU        = 144,
+   EM_MMDSP_PLUS    = 160, // STMicroelectronics 64bit VLIW Data Signal Processor
+   EM_CYPRESS_M8C   = 161, // Cypress M8C microprocessor
+   EM_R32C          = 162, // Renesas R32C series microprocessors
+diff --git a/lib/Support/Triple.cpp b/lib/Support/Triple.cpp
+index 11afcf7..408c8b1 100644
+--- a/lib/Support/Triple.cpp
++++ b/lib/Support/Triple.cpp
+@@ -37,6 +37,7 @@ const char *Triple::getArchTypeName(ArchType Kind) {
+   case ppc64:       return "powerpc64";
+   case ppc64le:     return "powerpc64le";
+   case ppc:         return "powerpc";
++  case pru:         return "pru";
+   case r600:        return "r600";
+   case amdgcn:      return "amdgcn";
+   case sparc:       return "sparc";
+@@ -244,6 +245,7 @@ Triple::ArchType Triple::getArchTypeForLLVMName(StringRef Name) {
+     .Case("ppc32", ppc)
+     .Case("ppc", ppc)
+     .Case("ppc64le", ppc64le)
++    .Case("pru", pru)
+     .Case("r600", r600)
+     .Case("amdgcn", amdgcn)
+     .Case("hexagon", hexagon)
+@@ -357,6 +359,7 @@ static Triple::ArchType parseArch(StringRef ArchName) {
+     .Cases("mips64", "mips64eb", Triple::mips64)
+     .Case("mips64el", Triple::mips64el)
+     .Case("r600", Triple::r600)
++    .Case("pru", Triple::pru)
+     .Case("amdgcn", Triple::amdgcn)
+     .Case("hexagon", Triple::hexagon)
+     .Cases("s390x", "systemz", Triple::systemz)
+@@ -572,6 +575,7 @@ static Triple::ObjectFormatType getDefaultFormat(const Triple &T) {
+   case Triple::nvptx:
+   case Triple::nvptx64:
+   case Triple::ppc64le:
++  case Triple::pru:
+   case Triple::r600:
+   case Triple::shave:
+   case Triple::sparc:
+@@ -1099,6 +1103,7 @@ static unsigned getArchPointerBitWidth(llvm::Triple::ArchType Arch) {
+   case llvm::Triple::mipsel:
+   case llvm::Triple::nvptx:
+   case llvm::Triple::ppc:
++  case llvm::Triple::pru:
+   case llvm::Triple::r600:
+   case llvm::Triple::sparc:
+   case llvm::Triple::sparcel:
+@@ -1176,6 +1181,7 @@ Triple Triple::get32BitArchVariant() const {
+   case Triple::mipsel:
+   case Triple::nvptx:
+   case Triple::ppc:
++  case Triple::pru:
+   case Triple::r600:
+   case Triple::sparc:
+   case Triple::sparcel:
+@@ -1214,6 +1220,7 @@ Triple Triple::get64BitArchVariant() const {
+   case Triple::hexagon:
+   case Triple::kalimba:
+   case Triple::msp430:
++  case Triple::pru:
+   case Triple::r600:
+   case Triple::tce:
+   case Triple::xcore:
+@@ -1279,6 +1286,7 @@ Triple Triple::getBigEndianArchVariant() const {
+   case Triple::msp430:
+   case Triple::nvptx64:
+   case Triple::nvptx:
++  case Triple::pru:
+   case Triple::r600:
+   case Triple::shave:
+   case Triple::spir64:
+@@ -1356,6 +1364,7 @@ Triple Triple::getLittleEndianArchVariant() const {
+   case Triple::nvptx64:
+   case Triple::nvptx:
+   case Triple::ppc64le:
++  case Triple::pru:
+   case Triple::r600:
+   case Triple::shave:
+   case Triple::sparcel:
+diff --git a/lib/Target/LLVMBuild.txt b/lib/Target/LLVMBuild.txt
+index eb794eb..d9c189d 100644
+--- a/lib/Target/LLVMBuild.txt
++++ b/lib/Target/LLVMBuild.txt
+@@ -30,6 +30,7 @@ subdirectories =
+  NVPTX
+  Mips
+  PowerPC
++ PRU
+  Sparc
+  SystemZ
+  WebAssembly
