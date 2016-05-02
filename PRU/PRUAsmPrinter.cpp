@@ -291,8 +291,9 @@ bool PRUAsmPrinter::PrintAsmMemoryOperand(const MachineInstr *MI, unsigned OpNo,
 
 //===----------------------------------------------------------------------===//
 void PRUAsmPrinter::EmitInstruction(const MachineInstr *MI) {
-    if (PRUInstrInfo::is_load_multiple(MI->getOpcode()) ||
-        PRUInstrInfo::is_store_multiple(MI->getOpcode())) {
+    if ((PRUInstrInfo::is_load_multiple(MI->getOpcode()) ||
+         PRUInstrInfo::is_store_multiple(MI->getOpcode())) &&
+        MI->getNumOperands() > 4) {
 
         raw_ostream &c = OutStreamer->GetCommentOS();
 
