@@ -291,6 +291,19 @@ bool PRUAsmPrinter::PrintAsmMemoryOperand(const MachineInstr *MI, unsigned OpNo,
 
 //===----------------------------------------------------------------------===//
 void PRUAsmPrinter::EmitInstruction(const MachineInstr *MI) {
+    if (PRUInstrInfo::is_load_multiple(MI->getOpcode()) ||
+        PRUInstrInfo::is_store_multiple(MI->getOpcode())) {
+
+        raw_ostream &c = OutStreamer->GetCommentOS();
+
+        c << "batched:";
+        for (unsigned opnum = 3; opnum < MI->getNumOperands(); opnum += 1) {
+            c << " " << PRUInstPrinter::getRegisterName(
+                            MI->getOperand(opnum).getReg());
+        }
+        OutStreamer->AddComment("");
+    }
+
     PRUMCInstLower MCInstLowering(OutContext, *this);
 
     MCInst TmpInst;

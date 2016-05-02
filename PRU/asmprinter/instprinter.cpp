@@ -32,16 +32,6 @@ void PRUInstPrinter::print_addr(const MCInst *inst, unsigned opnum,
     }
 }
 
-void PRUInstPrinter::print_multi_reg(const MCInst *i, unsigned opnum,
-                                     raw_ostream &out) {
-    for (unsigned j = opnum; j < i->getNumOperands(); j += 1) {
-        if (j > opnum) {
-            out << ", ";
-        }
-        out << getRegisterName(i->getOperand(j).getReg());
-    }
-}
-
 void PRUInstPrinter::printPCRelImmOperand(const MCInst *MI, unsigned OpNo,
                                           raw_ostream &O) {
     const MCOperand &Op = MI->getOperand(OpNo);

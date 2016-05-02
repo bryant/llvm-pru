@@ -25,7 +25,6 @@ def regaddr : Operand<iPTR>, ComplexPattern<iPTR, 2, "SelectAddressReg"> {
 
 def reglist : Operand<i32>, AsmOperandClass {
     let Name = "reglistop";
-    let PrintMethod = "print_multi_reg";
 }
 
 def build_pair : SDNode<"ISD::BUILD_PAIR",
