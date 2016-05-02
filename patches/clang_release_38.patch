@@ -1,6 +1,8 @@
---- a/include/clang/Basic/Attr.td	2016-05-01 06:25:49.202653899 +0000
-+++ b/include/clang/Basic/Attr.td	2015-12-11 21:20:28.300327636 +0000
-@@ -258,6 +258,7 @@
+diff --git a/include/clang/Basic/Attr.td b/include/clang/Basic/Attr.td
+index d5ba722..e168bec 100644
+--- a/include/clang/Basic/Attr.td
++++ b/include/clang/Basic/Attr.td
+@@ -258,6 +258,7 @@ def TargetWindows : TargetArch<["x86", "x86_64", "arm", "thumb"]> {
  def TargetMicrosoftCXXABI : TargetArch<["x86", "x86_64", "arm", "thumb"]> {
    let CXXABIs = ["Microsoft"];
  }
@@ -8,10 +10,12 @@
  
  class Attr {
    // The various ways in which an attribute can be spelled in source
---- a/lib/CodeGen/TargetInfo.cpp	2016-05-01 06:25:04.189367820 +0000
-+++ b/lib/CodeGen/TargetInfo.cpp	2016-02-13 11:36:55.189938988 +0000
-@@ -6754,6 +6724,71 @@
- }
+diff --git a/lib/CodeGen/TargetInfo.cpp b/lib/CodeGen/TargetInfo.cpp
+index 3d1ddef..11c653a 100644
+--- a/lib/CodeGen/TargetInfo.cpp
++++ b/lib/CodeGen/TargetInfo.cpp
+@@ -6809,6 +6809,71 @@ SparcV9TargetCodeGenInfo::initDwarfEHRegSizeTable(CodeGen::CodeGenFunction &CGF,
+ 
  
  //===----------------------------------------------------------------------===//
 +// PRU ABI Implementation
@@ -82,7 +86,7 @@
  // XCore ABI Implementation
  //===----------------------------------------------------------------------===//
  
-@@ -7529,5 +7563,8 @@
+@@ -7585,5 +7650,8 @@ const TargetCodeGenInfo &CodeGenModule::getTargetCodeGenInfo() {
      return *(TheTargetCodeGenInfo = new SparcV9TargetCodeGenInfo(Types));
    case llvm::Triple::xcore:
      return *(TheTargetCodeGenInfo = new XCoreTargetCodeGenInfo(Types));
@@ -91,9 +95,11 @@
 +    return *(TheTargetCodeGenInfo = new PRUTargetCodeGenInfo(Types));
    }
  }
---- a/lib/Basic/Targets.cpp	2016-05-01 06:22:08.732953960 +0000
-+++ b/lib/Basic/Targets.cpp	2016-05-01 06:22:15.629117157 +0000
-@@ -7219,6 +7148,67 @@
+diff --git a/lib/Basic/Targets.cpp b/lib/Basic/Targets.cpp
+index af8aea0..e15c858 100644
+--- a/lib/Basic/Targets.cpp
++++ b/lib/Basic/Targets.cpp
+@@ -7426,6 +7426,67 @@ public:
    }
  };
  
@@ -160,8 +166,8 @@
 +
  class XCoreTargetInfo : public TargetInfo {
    static const Builtin::Info BuiltinInfo[];
- 
-@@ -7720,6 +7710,9 @@
+ public:
+@@ -7931,6 +7992,9 @@ static TargetInfo *AllocateTarget(const llvm::Triple &Triple) {
      if (!(Triple == llvm::Triple("wasm64-unknown-unknown")))
        return nullptr;
      return new WebAssemblyOSTargetInfo<WebAssembly64TargetInfo>(Triple);
@@ -170,4 +176,3 @@
 +    return new PRUTargetInfo(Triple);
    }
  }
- 
