@@ -6,6 +6,7 @@ cmake -G Ninja \
     -D BUILD_SHARED_LIBS=ON \
     -D CMAKE_C_COMPILER=clang \
     -D CMAKE_CXX_COMPILER=clang++ \
+    -D CMAKE_LINKER=gold \
     -D CMAKE_BUILD_TYPE=Debug \
     -D CMAKE_C_FLAGS=-O0 \
     -D CMAKE_INSTALL_PREFIX=$HOME/usr \
