@@ -13,13 +13,14 @@
   actually present in pasm's source.
 
 ## pruce todos
-- loop/iloop pass
-- lbbo/sbbo merger
-- pseudo-instruction expansion pass
-- handle signed ops
-  - sext
-  - s arith
-- support for adc/suc
-- follow ti's calling and return conventions
+- [ ] loop/iloop pass
+- [x] lbbo/sbbo merger
+  - [ ] sbbo merge
+- [ ] pseudo-instruction expansion pass
+- [ ] handle signed ops
+- [ ] - sext
+- [ ] - s arith
+- [ ] support for adc/suc
+- [x] follow ti's calling and return conventions
 
 ` vim: set syntax=markdown textwidth=0 tabstop=2 shiftwidth=2 nolist: `
