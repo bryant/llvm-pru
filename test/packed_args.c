@@ -1,4 +1,4 @@
-// RUN: %clang -O3 -S -o - -target pru %s | FileCheck %s
+// RUN: %clang -O3 -S -o - -target pru -mllvm -bbo-combiner2 %s | FileCheck %s
 
 // we expect `a`, `b`, `c` to be packed into r14.b0, r15, and r14.w1,
 // respectively. furthermore, we expect the codegen to be efficient enough to
