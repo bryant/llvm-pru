@@ -11,3 +11,39 @@ unsigned int add_sub(unsigned char a, unsigned int b, unsigned short c) {
     // CHECK-DAG: SUB r14, {{[^,]+}}, r14.w1
     return a + b - c;
 }
+
+typedef struct {
+    unsigned int a;
+    unsigned int b;
+} T;
+
+unsigned struct_should_be_in_regs(T t) {
+    // CHECK-LABEL: struct_should_be_in_regs:
+    // CHECK: ADD r14, r14, r15
+    return t.a + t.b;
+}
+
+typedef struct {
+    unsigned int b;
+    unsigned char a;
+} S;
+
+unsigned struct_should_be_in_stack(S s) {
+    // CHECK-LABEL: struct_should_be_in_stack:
+    // CHECK: LBBO &{{[^,]+}}, r2, 0, 0x5
+    // CHECK: ADD r14, {{[^,]+}}, {{[^,]+}}
+    return s.a + s.b;
+}
+
+typedef struct {
+    unsigned char a;
+    unsigned int b;
+    unsigned short c;
+    unsigned short d;
+} Large;
+
+unsigned larger_than_64_goes_into_stack(Large l) {
+    // CHECK-LABEL: larger_than_64_goes_into_stack:
+    // CHECK: LBBO &{{[^,]+}}, r2, 0, 0x9
+    return l.a + l.b + l.c + l.d;
+}
