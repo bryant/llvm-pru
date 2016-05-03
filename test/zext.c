@@ -4,12 +4,14 @@ unsigned char zextadd(unsigned int a, unsigned short b) {
     // CHECK-LABEL: zextadd:
     // CHECK: ADD [[REG:r[0-9]+]].b0, {{(r14|r15).b0}}, {{(r14|r15).b0}}
     // CHECK-NEXT: MOV r14, [[REG]].b0
+    // ^ zero extension from result (char8) to return reg is needed
     return a + b;
 }
 
 unsigned short zextadd2(unsigned int a, unsigned char b) { 
     // CHECK-LABEL: zextadd2:
-    // CHECK: ADD r{{[0-9]+}}.w0, {{(r14|r15.b0)}}, {{(r14|r15.b0)}}
+    // CHECK: ADD [[REG:r[0-9]+]].w0, {{(r14|r15.b0)}}, {{(r14|r15.b0)}}
+    // CHECK-NEXT: MOV r14, [[REG]].w0
     return a + b;
 }
 
