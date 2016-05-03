@@ -22,6 +22,8 @@ Sized32 ti_buggy_codegen(Sized32 a) {
     // 00000018     20c30000      JMP R3.w2
 
     // CHECK-LABEL: ti_buggy_codegen:
+    // CHECK-DAG: ADD r14.b0, r14.b0, 0x1
+    // CHECK-DAG: ADD r14.w1, r14.w1, 0x9
     // CHECK-NOT: SBBO
     // CHECK-NOT: LBBO
     Sized32 rv = {a.a + 1, a.b + 9};
