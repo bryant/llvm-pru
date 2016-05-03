@@ -145,8 +145,9 @@ static SDValue lower_call_addr(SDValue addr, SDLoc dl, SelectionDAG &sdag) {
     } else if (ExternalSymbolSDNode *s = dyn_cast<ExternalSymbolSDNode>(addr)) {
         return sdag.getTargetExternalSymbol(s->getSymbol(), ptrvt, 0);
     } else {
-        callee->print(dbgs());
-        llvm_unreachable("^^ unknown call address node type!");
+        dbgs() << "Unknown call address node type\n";
+        addr->print(dbgs());
+        return addr;
     }
 }
 

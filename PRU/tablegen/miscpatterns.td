@@ -50,3 +50,4 @@ def : Pat<
 
 def : Pat<(pru_call tglobaladdr: $calladdr), (call tglobaladdr: $calladdr)>;
 def : Pat<(pru_call texternalsym: $calladdr), (call texternalsym: $calladdr)>;
+def : Pat<(pru_call reg32: $calladdr), (call reg32: $calladdr)>;
