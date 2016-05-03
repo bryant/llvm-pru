@@ -29,6 +29,12 @@ PRURegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
     return callee_saved_SaveList;
 }
 
+const uint32_t *PRURegisterInfo::getCallPreservedMask(const MachineFunction &,
+                                                      CallingConv::ID) const {
+    // generated from callingconv.td
+    return callee_saved_RegMask;
+}
+
 BitVector PRURegisterInfo::getReservedRegs(const MachineFunction &MF) const {
     BitVector reserved(getNumRegs());
 

@@ -168,6 +168,10 @@ SDValue PRUTargetLowering::LowerCall(CallLoweringInfo &call,
     callops.insert(callops.begin(),
                    lower_call_addr(call.Callee, call.DL, call.DAG));
     callops.insert(callops.begin(), ch);
+    callops.push_back(call.DAG.getRegisterMask(
+        call.DAG.getSubtarget().getRegisterInfo()->getCallPreservedMask(
+            call.DAG.getMachineFunction(), call.CallConv)));
+
     if (glue) {
         callops.push_back(glue);
     }

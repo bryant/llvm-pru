@@ -25,6 +25,9 @@ struct PRURegisterInfo : public PRUGenRegisterInfo {
     const MCPhysReg *
     getCalleeSavedRegs(const MachineFunction *MF) const override;
 
+    const uint32_t *getCallPreservedMask(const MachineFunction &,
+                                         CallingConv::ID) const override;
+
     BitVector getReservedRegs(const MachineFunction &MF) const override;
     const TargetRegisterClass *
     getPointerRegClass(const MachineFunction &MF,
