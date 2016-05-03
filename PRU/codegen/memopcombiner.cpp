@@ -79,7 +79,9 @@ struct MemLoc {
             rv.fi = ii.getOperand(1).getIndex();
             rv.start = fr.getObjectOffset(rv.fi) + ii.getOperand(2).getImm();
         } else {
-            return {AlwaysAliases, &ii};
+            rv.kind = AlwaysAliases;
+            rv.i = &ii;
+            return rv;
         }
 
         rv.i = &ii;
