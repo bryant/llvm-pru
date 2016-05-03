@@ -20,15 +20,10 @@ namespace pru {
 
 char omfgchrist;
 class Dumd : public MachineFunctionPass {
-    LiveIntervals *li;
-    VirtRegMap *vmap;
-
   public:
     Dumd() : MachineFunctionPass(omfgchrist) {}
 
     bool runOnMachineFunction(MachineFunction &f) override {
-        li = &getAnalysis<LiveIntervals>();
-        vmap = &getAnalysis<VirtRegMap>();
         dbgs() << "Dumd says:\n";
         dbgs() << "\n" << f.getRegInfo().getNumVirtRegs() << " virtregs\n";
 
@@ -58,8 +53,6 @@ class Dumd : public MachineFunctionPass {
     }
 
     void getAnalysisUsage(AnalysisUsage &a) const override {
-        a.addRequired<LiveIntervals>();
-        a.addRequired<VirtRegMap>();
         a.setPreservesAll();
         return MachineFunctionPass::getAnalysisUsage(a);
     }
