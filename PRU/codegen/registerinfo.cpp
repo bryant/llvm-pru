@@ -14,6 +14,7 @@
 #include "targetdesc.h"
 
 using namespace llvm;
+using RegInfo = PRURegisterInfo::RegInfo;
 
 #define DEBUG_TYPE "pru-reg-info"
 
@@ -129,8 +130,8 @@ const std::vector<MCPhysReg> PRURegisterInfo::i32_arg_regs() const {
     return rv;
 }
 
-std::vector<PRURegisterInfo::RegInfo> PRURegisterInfo::build_infos() {
-    std::vector<PRURegisterInfo::RegInfo> rv(PRU::NUM_TARGET_REGS, {Byte, 0});
+std::array<RegInfo, PRU::NUM_TARGET_REGS> PRURegisterInfo::build_infos() {
+    std::array<RegInfo, PRU::NUM_TARGET_REGS> rv;
 
     rv[PRU::b0] = {Byte, 0};
     rv[PRU::b1] = {Byte, 1};
@@ -163,5 +164,5 @@ unsigned PRURegisterInfo::reg_at_pos(unsigned offset, RegSize size) {
     }
 }
 
-const std::vector<PRURegisterInfo::RegInfo> PRURegisterInfo::reginfos =
-    build_infos();
+const std::array<RegInfo, PRU::NUM_TARGET_REGS> PRURegisterInfo::reginfos =
+    PRURegisterInfo::build_infos();

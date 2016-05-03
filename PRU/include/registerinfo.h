@@ -5,6 +5,8 @@
 #define GET_REGINFO_HEADER
 #include "registerinfo.inc"
 
+#include "targetdesc.h"
+
 namespace llvm {
 
 struct PRURegisterInfo : public PRUGenRegisterInfo {
@@ -15,7 +17,7 @@ struct PRURegisterInfo : public PRUGenRegisterInfo {
         unsigned offset;
     };
 
-    static const std::vector<RegInfo> reginfos;
+    static const std::array<RegInfo, PRU::NUM_TARGET_REGS> reginfos;
 
     PRURegisterInfo();
 
@@ -56,12 +58,12 @@ struct PRURegisterInfo : public PRUGenRegisterInfo {
         return n;
     }
 
-    static std::vector<RegInfo> build_infos();
+    static std::array<RegInfo, PRU::NUM_TARGET_REGS> build_infos();
 
     static unsigned reg_at_pos(unsigned offset, RegSize size);
 
     static RegSize reg_size(unsigned reg) { return reginfos[reg].size; }
-    static unsigned  reg_size_bits(unsigned reg) { return reg_size(reg) * 8; }
+    static unsigned reg_size_bits(unsigned reg) { return reg_size(reg) * 8; }
 
     static unsigned reg_offset(unsigned reg) { return reginfos[reg].offset; }
 
