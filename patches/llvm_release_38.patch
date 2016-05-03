@@ -34,6 +34,26 @@ index e24420f..908f91b 100644
    EM_MMDSP_PLUS    = 160, // STMicroelectronics 64bit VLIW Data Signal Processor
    EM_CYPRESS_M8C   = 161, // Cypress M8C microprocessor
    EM_R32C          = 162, // Renesas R32C series microprocessors
+diff --git a/lib/CodeGen/LiveIntervalAnalysis.cpp b/lib/CodeGen/LiveIntervalAnalysis.cpp
+index a506e05..0a26533 100644
+--- a/lib/CodeGen/LiveIntervalAnalysis.cpp
++++ b/lib/CodeGen/LiveIntervalAnalysis.cpp
+@@ -48,7 +48,6 @@ char &llvm::LiveIntervalsID = LiveIntervals::ID;
+ INITIALIZE_PASS_BEGIN(LiveIntervals, "liveintervals",
+                 "Live Interval Analysis", false, false)
+ INITIALIZE_PASS_DEPENDENCY(AAResultsWrapperPass)
+-INITIALIZE_PASS_DEPENDENCY(LiveVariables)
+ INITIALIZE_PASS_DEPENDENCY(MachineDominatorTree)
+ INITIALIZE_PASS_DEPENDENCY(SlotIndexes)
+ INITIALIZE_PASS_END(LiveIntervals, "liveintervals",
+@@ -80,7 +79,6 @@ void LiveIntervals::getAnalysisUsage(AnalysisUsage &AU) const {
+   // LiveVariables isn't really required by this analysis, it is only required
+   // here to make sure it is live during TwoAddressInstructionPass and
+   // PHIElimination. This is temporary.
+-  AU.addRequired<LiveVariables>();
+   AU.addPreserved<LiveVariables>();
+   AU.addPreservedID(MachineLoopInfoID);
+   AU.addRequiredTransitiveID(MachineDominatorsID);
 diff --git a/lib/Support/Triple.cpp b/lib/Support/Triple.cpp
 index 11afcf7..408c8b1 100644
 --- a/lib/Support/Triple.cpp
