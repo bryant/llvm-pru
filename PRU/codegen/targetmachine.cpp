@@ -25,31 +25,8 @@ class Dumd : public MachineFunctionPass {
 
     bool runOnMachineFunction(MachineFunction &f) override {
         dbgs() << "Dumd says:\n";
+        f.print(dbgs());
         dbgs() << "\n" << f.getRegInfo().getNumVirtRegs() << " virtregs\n";
-        const TargetRegisterInfo &tri = *f.getSubtarget().getRegisterInfo();
-
-        for (const MachineBasicBlock &mbb : f) {
-            for (const MachineInstr &i : mbb) {
-                dbgs() << i;
-                for (const MachineOperand &oper :
-                     make_range(i.operands_begin(), i.operands_end())) {
-                    if (oper.isReg()) {
-                        dbgs() << "reg " << tri.getName(oper.getReg());
-                        if (oper.isKill()) {
-                            dbgs() << " kill";
-                        }
-                        if (oper.isDef()) {
-                            dbgs() << " def";
-                        }
-                        if (oper.isUse()) {
-                            dbgs() << " use";
-                        }
-                        dbgs() << "\n";
-                    }
-                }
-                dbgs() << "\n";
-            }
-        }
         return false;
     }
 
