@@ -5,6 +5,10 @@
 #include "llvm/Support/TargetRegistry.h"
 
 #include "targetmachine.h"
+#include "llvm/CodeGen/LiveIntervalAnalysis.h"
+#include "llvm/CodeGen/MachineFunctionPass.h"
+#include "llvm/CodeGen/MachineRegisterInfo.h"
+#include "llvm/CodeGen/VirtRegMap.h"
 
 using namespace llvm;
 
@@ -13,6 +17,57 @@ static cl::opt<bool> EnableCombiner2("bbo-combiner2", cl::Hidden,
                                      cl::init(false));
 
 namespace pru {
+
+char omfgchrist;
+class Dumd : public MachineFunctionPass {
+    LiveIntervals *li;
+    VirtRegMap *vmap;
+
+  public:
+    Dumd() : MachineFunctionPass(omfgchrist) {}
+
+    bool runOnMachineFunction(MachineFunction &f) override {
+        li = &getAnalysis<LiveIntervals>();
+        vmap = &getAnalysis<VirtRegMap>();
+        dbgs() << "Dumd says:\n";
+        dbgs() << "\n" << f.getRegInfo().getNumVirtRegs() << " virtregs\n";
+
+        for (const MachineBasicBlock &mbb : f) {
+            for (const MachineInstr &i : mbb) {
+                dbgs() << i;
+                for (const MachineOperand &oper :
+                     make_range(i.operands_begin(), i.operands_end())) {
+                    if (oper.isReg()) {
+                        dbgs() << "reg " << oper;
+                        if (oper.isKill()) {
+                            dbgs() << " kill";
+                        }
+                        if (oper.isDef()) {
+                            dbgs() << " def";
+                        }
+                        if (oper.isUse()) {
+                            dbgs() << " use";
+                        }
+                        dbgs() << "\n";
+                    }
+                }
+                dbgs() << "\n";
+            }
+        }
+        return false;
+    }
+
+    void getAnalysisUsage(AnalysisUsage &a) const override {
+        a.addRequired<LiveIntervals>();
+        a.addRequired<VirtRegMap>();
+        a.setPreservesAll();
+        return MachineFunctionPass::getAnalysisUsage(a);
+    }
+
+    const char *getPassName() const override {
+        return "The Operand Printer (TM)";
+    }
+};
 
 class PRUPassConfig : public TargetPassConfig {
   public:
@@ -32,6 +87,8 @@ class PRUPassConfig : public TargetPassConfig {
         }
         return false;
     }
+
+    void addPreSched2() override { addPass(new Dumd()); }
 };
 
 extern Target target;
