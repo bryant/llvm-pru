@@ -245,14 +245,46 @@ void PRUInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
                                bool KillSrc) const {
     unsigned Opc;
 
-    if (PRU::reg8RegClass.contains(DestReg, SrcReg)) {
-        Opc = PRU::pru_mov_reg8_reg8;
-    } else if (PRU::reg16RegClass.contains(DestReg, SrcReg)) {
-        Opc = PRU::pru_mov_reg16_reg16;
-    } else if (PRU::reg32RegClass.contains(DestReg, SrcReg)) {
-        Opc = PRU::pru_mov_reg32_reg32;
-    } else {
-        llvm_unreachable("unknown register size");
+    switch (PRURegisterInfo::reg_size(DestReg)) {
+    case PRURegisterInfo::Byte:
+        switch (PRURegisterInfo::reg_size(SrcReg)) {
+        case PRURegisterInfo::Byte:
+            Opc = PRU::pru_mov_reg8_reg8;
+            break;
+        case PRURegisterInfo::Word:
+            Opc = PRU::pru_mov_reg8_reg16;
+            break;
+        case PRURegisterInfo::DWord:
+            Opc = PRU::pru_mov_reg8_reg32;
+            break;
+        }
+        break;
+    case PRURegisterInfo::Word:
+        switch (PRURegisterInfo::reg_size(SrcReg)) {
+        case PRURegisterInfo::Byte:
+            Opc = PRU::pru_mov_reg16_reg8;
+            break;
+        case PRURegisterInfo::Word:
+            Opc = PRU::pru_mov_reg16_reg16;
+            break;
+        case PRURegisterInfo::DWord:
+            Opc = PRU::pru_mov_reg16_reg32;
+            break;
+        }
+        break;
+    case PRURegisterInfo::DWord:
+        switch (PRURegisterInfo::reg_size(SrcReg)) {
+        case PRURegisterInfo::Byte:
+            Opc = PRU::pru_mov_reg32_reg8;
+            break;
+        case PRURegisterInfo::Word:
+            Opc = PRU::pru_mov_reg32_reg16;
+            break;
+        case PRURegisterInfo::DWord:
+            Opc = PRU::pru_mov_reg32_reg32;
+            break;
+        }
+        break;
     }
 
     BuildMI(MBB, I, DL, get(Opc), DestReg)
