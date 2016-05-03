@@ -105,8 +105,6 @@ struct MemLoc {
         return true;
     }
 
-    bool compat_with(const MemLoc &other) const { return !could_alias(other); }
-
     bool operator<(const MemLoc &other) {
         // assert(kind == other.kind);
         if (kind == MemLoc::BaseOffset) {
@@ -139,10 +137,8 @@ struct Cluster {
     unsigned index;
 
     bool can_accept(const MemLoc &loc) const {
-        return all_of(memops.begin(), memops.end(), [&](MemLoc l) {
-            bool rv = loc.compat_with(l);
-            return rv;
-        });
+        return all_of(memops.begin(), memops.end(),
+                      [&](MemLoc l) { return !loc.could_alias(l); });
     }
 
     void sort() { std::sort(std::next(memops.begin()), memops.end()); }
