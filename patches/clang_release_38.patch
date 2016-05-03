@@ -11,10 +11,10 @@ index d5ba722..e168bec 100644
  class Attr {
    // The various ways in which an attribute can be spelled in source
 diff --git a/lib/CodeGen/TargetInfo.cpp b/lib/CodeGen/TargetInfo.cpp
-index 3d1ddef..11c653a 100644
+index 3d1ddef..0c0dcfb 100644
 --- a/lib/CodeGen/TargetInfo.cpp
 +++ b/lib/CodeGen/TargetInfo.cpp
-@@ -6809,6 +6809,71 @@ SparcV9TargetCodeGenInfo::initDwarfEHRegSizeTable(CodeGen::CodeGenFunction &CGF,
+@@ -6809,6 +6809,76 @@ SparcV9TargetCodeGenInfo::initDwarfEHRegSizeTable(CodeGen::CodeGenFunction &CGF,
  
  
  //===----------------------------------------------------------------------===//
@@ -67,7 +67,12 @@ index 3d1ddef..11c653a 100644
 +
 +  void computeInfo(CGFunctionInfo &FI) const override {
 +    if (!getCXXABI().classifyReturnType(FI)) {
-+      FI.getReturnInfo() = classify(FI.getReturnType());
++        QualType retty = FI.getReturnType();
++        if (retty->isVoidType()) {
++          FI.getReturnInfo() = ABIArgInfo::getIgnore();
++        } else {
++          FI.getReturnInfo() = classify(FI.getReturnType());
++        }
 +    }
 +    for (auto &I : FI.arguments()) {
 +      I.info = classify(useFirstFieldIfTransparentUnion(I.type));
@@ -86,7 +91,7 @@ index 3d1ddef..11c653a 100644
  // XCore ABI Implementation
  //===----------------------------------------------------------------------===//
  
-@@ -7585,5 +7650,8 @@ const TargetCodeGenInfo &CodeGenModule::getTargetCodeGenInfo() {
+@@ -7585,5 +7655,8 @@ const TargetCodeGenInfo &CodeGenModule::getTargetCodeGenInfo() {
      return *(TheTargetCodeGenInfo = new SparcV9TargetCodeGenInfo(Types));
    case llvm::Triple::xcore:
      return *(TheTargetCodeGenInfo = new XCoreTargetCodeGenInfo(Types));
