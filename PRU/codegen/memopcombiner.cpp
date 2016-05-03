@@ -94,10 +94,8 @@ struct MemLoc {
             return true;
         }
 
-        if (kind == BaseOffset) {
-            if (base == other.base) {
-                return intervals_intersect(start, end, other.start, other.end);
-            }
+        if (kind == BaseOffset && base == other.base) {
+            return intervals_intersect(start, end, other.start, other.end);
         } else if (kind == FrameSlot) {
             return intervals_intersect(start, end, other.start, other.end);
         }
