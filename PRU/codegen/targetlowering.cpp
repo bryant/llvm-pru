@@ -158,6 +158,8 @@ SDValue PRUTargetLowering::LowerCall(CallLoweringInfo &call,
     assert(call.CallConv == CallingConv::Fast ||
            call.CallConv == CallingConv::C);
 
+    call.IsTailCall = false;
+
     TexasCC cc(call.DAG, call.IsVarArg);
     SDValue space = call.DAG.getIntPtrConstant(cc.compute_call_stack(call.Outs),
                                                call.DL, true);
