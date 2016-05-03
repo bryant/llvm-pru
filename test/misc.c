@@ -29,3 +29,23 @@ Sized32 ti_buggy_codegen(Sized32 a) {
     Sized32 rv = {a.a + 1, a.b + 9};
     return rv;
 }
+
+unsigned there_should_be_no_loop(unsigned n, unsigned char m) {
+    // ti bug: triggers insertion of `loop` instr that isn't elided:
+    // 00000000                   add:
+    // 00000000     51000f03      QBEQ $C$L1, R15.b0, 0
+    // 00000004     000feeee      ADD R14, R14, R15.b0
+    // 00000008     300f0001      LOOP $C$L1, R15.b0
+    // 0000000c                   $C$L2:
+    // 0000000c                   $C$L1:
+    // 0000000c     20c30000      JMP R3.w2
+
+    // CHECK-LABEL: there_should_be_no_loop:
+    // CHECK: ADD r14, {{r14|r15.b0}}, {{r14|r15.b0}}
+    // CHECK-NEXT: JMP r3.w2
+    unsigned i;
+    for (i = 0; i < m; ++i) {
+        n += 1;
+    }
+    return n;
+}
