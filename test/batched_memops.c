@@ -1,4 +1,4 @@
-// RUN: %clang -O3 -S -o - -target pru %s -mllvm -bbo-combiner2 \
+// RUN: %clang -O3 -S -o - -target pru -fverbose-asm -mllvm -bbo-combiner2 %s \
 // RUN:     | FileCheck -check-prefix=BATCHED %s
 // RUN: %clang -O3 -S -o - -target pru %s | FileCheck -check-prefix=UNBATCHED %s
 
@@ -17,7 +17,7 @@ typedef struct {
 
 Sponge inc_sponge(Sponge s) {
     // CHECK-LABEL: inc_sponge:
-    // BATCHED: LBBO &{{[^,]+}}, r2, 0, 0xa
+    // BATCHED: LBBO &{{[^,]+}}, r2, 0, {{.+}} ; batched
     // UNBATCHED: LBBO &{{[^,]+}}, r2, 0, 1
     s.a += 1;
     s.b += 2;

@@ -1,4 +1,5 @@
-// RUN: %clang -O3 -S -o - -target pru -mllvm -bbo-combiner2 %s | FileCheck %s
+// RUN: %clang -O3 -S -o - -target pru -fverbose-asm -mllvm -bbo-combiner2 %s \
+// RUN:     | FileCheck %s
 
 #pragma pack(1)
 
@@ -30,7 +31,7 @@ typedef struct {
 
 unsigned struct_should_be_in_stack(S s) {
     // CHECK-LABEL: struct_should_be_in_stack:
-    // CHECK: LBBO &{{[^,]+}}, r2, 0, 0x5
+    // CHECK: LBBO &{{[^,]+}}, r2, 0, {{.+}} ; batched
     // CHECK: ADD r14, {{[^,]+}}, {{[^,]+}}
     return s.a + s.b;
 }
@@ -44,6 +45,6 @@ typedef struct {
 
 unsigned larger_than_64_goes_into_stack(Large l) {
     // CHECK-LABEL: larger_than_64_goes_into_stack:
-    // CHECK: LBBO &{{[^,]+}}, r2, 0, 0x9
+    // CHECK: LBBO &{{[^,]+}}, r2, 0, {{.+}} ; batched
     return l.a + l.b + l.c + l.d;
 }
