@@ -67,18 +67,22 @@ struct MemLoc {
 
     static MemLoc from_mi(MachineInstr &ii) {
         MemLoc rv;
+        const MachineFrameInfo &fr =
+            *ii.getParent()->getParent()->getFrameInfo();
         if (ii.getOperand(1).isReg() && ii.getOperand(2).isImm()) {
             rv.kind = BaseOffset;
+            rv.start = ii.getOperand(2).getImm();
             rv.base = ii.getOperand(1).getReg();
-        } else if (ii.getOperand(1).isFI() && ii.getOperand(2).isImm()) {
-            rv.fi = ii.getOperand(1).getIndex();
+        } else if (ii.getOperand(1).isFI() && ii.getOperand(2).isImm() &&
+                   fr.isFixedObjectIndex(ii.getOperand(1).getIndex())) {
             rv.kind = FrameSlot;
+            rv.fi = ii.getOperand(1).getIndex();
+            rv.start = fr.getObjectOffset(rv.fi) + ii.getOperand(2).getImm();
         } else {
             return {AlwaysAliases, &ii};
         }
 
         rv.i = &ii;
-        rv.start = ii.getOperand(2).getImm();
         rv.size = op_size(ii);
         rv.end = rv.start + rv.size - 1;
         return rv;
@@ -95,21 +99,13 @@ struct MemLoc {
                 return intervals_intersect(start, end, other.start, other.end);
             }
         } else if (kind == FrameSlot) {
-            if (fi == other.fi) {
-                return intervals_intersect(start, end, other.start, other.end);
-            }
-            return false;
+            return intervals_intersect(start, end, other.start, other.end);
         }
 
         return true;
     }
 
-    bool compat_with(const MemLoc &other) const {
-        if (kind == FrameSlot && other.kind == FrameSlot && other.fi != fi) {
-            return false;
-        }
-        return !could_alias(other);
-    }
+    bool compat_with(const MemLoc &other) const { return !could_alias(other); }
 
     bool operator<(const MemLoc &other) {
         // assert(kind == other.kind);
