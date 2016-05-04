@@ -139,10 +139,10 @@ const std::vector<MCPhysReg> PRURegisterInfo::i32_arg_regs() const {
 std::array<RegInfo, PRU::NUM_TARGET_REGS> PRURegisterInfo::build_infos() {
     std::array<RegInfo, PRU::NUM_TARGET_REGS> rv;
 
-    rv[PRU::b0] = {Byte, 0};
-    rv[PRU::b1] = {Byte, 1};
-    rv[PRU::b2] = {Byte, 2};
-    rv[PRU::b3] = {Byte, 3};
+    rv[PRU::b0] = {RegSize::Byte, 0};
+    rv[PRU::b1] = {RegSize::Byte, 1};
+    rv[PRU::b2] = {RegSize::Byte, 2};
+    rv[PRU::b3] = {RegSize::Byte, 3};
 
     for (unsigned i = 0; i < len(all_reg8_SaveList); i += 1) {
         rv[all_reg8_SaveList[i]] = {RegSize::Byte, i};

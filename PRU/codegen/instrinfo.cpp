@@ -243,44 +243,45 @@ void PRUInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
                                MachineBasicBlock::iterator I, DebugLoc DL,
                                unsigned DestReg, unsigned SrcReg,
                                bool KillSrc) const {
+    using RegSize = PRURegisterInfo::RegSize;
     unsigned Opc;
 
     switch (PRURegisterInfo::reg_size(DestReg)) {
-    case PRURegisterInfo::Byte:
+    case RegSize::Byte:
         switch (PRURegisterInfo::reg_size(SrcReg)) {
-        case PRURegisterInfo::Byte:
+        case RegSize::Byte:
             Opc = PRU::pru_mov_reg8_reg8;
             break;
-        case PRURegisterInfo::Word:
+        case RegSize::Word:
             Opc = PRU::pru_mov_reg8_reg16;
             break;
-        case PRURegisterInfo::DWord:
+        case RegSize::DWord:
             Opc = PRU::pru_mov_reg8_reg32;
             break;
         }
         break;
-    case PRURegisterInfo::Word:
+    case RegSize::Word:
         switch (PRURegisterInfo::reg_size(SrcReg)) {
-        case PRURegisterInfo::Byte:
+        case RegSize::Byte:
             Opc = PRU::pru_mov_reg16_reg8;
             break;
-        case PRURegisterInfo::Word:
+        case RegSize::Word:
             Opc = PRU::pru_mov_reg16_reg16;
             break;
-        case PRURegisterInfo::DWord:
+        case RegSize::DWord:
             Opc = PRU::pru_mov_reg16_reg32;
             break;
         }
         break;
-    case PRURegisterInfo::DWord:
+    case RegSize::DWord:
         switch (PRURegisterInfo::reg_size(SrcReg)) {
-        case PRURegisterInfo::Byte:
+        case RegSize::Byte:
             Opc = PRU::pru_mov_reg32_reg8;
             break;
-        case PRURegisterInfo::Word:
+        case RegSize::Word:
             Opc = PRU::pru_mov_reg32_reg16;
             break;
-        case PRURegisterInfo::DWord:
+        case RegSize::DWord:
             Opc = PRU::pru_mov_reg32_reg32;
             break;
         }

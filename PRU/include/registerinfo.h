@@ -10,7 +10,7 @@
 namespace llvm {
 
 struct PRURegisterInfo : public PRUGenRegisterInfo {
-    enum RegSize { Byte = 1, Word = 2, DWord = 4 };
+    enum struct RegSize { Byte = 1, Word = 2, DWord = 4 };
 
     struct RegInfo {
         RegSize size;
@@ -66,13 +66,22 @@ struct PRURegisterInfo : public PRUGenRegisterInfo {
     static unsigned reg_at_pos(unsigned offset, RegSize size);
 
     static RegSize reg_size(unsigned reg) { return reginfos[reg].size; }
-    static unsigned reg_size_bits(unsigned reg) { return reg_size(reg) * 8; }
+
+    static unsigned reg_size_unsigned(unsigned reg) {
+        return static_cast<unsigned>(reg_size(reg));
+    }
+
+    static unsigned reg_size_bits(unsigned reg) {
+        return reg_size_unsigned(reg) * 8;
+    }
 
     static unsigned reg_offset(unsigned reg) { return reginfos[reg].offset; }
 
     static bool are_adjacent(unsigned reg0, unsigned reg1) {
-        return reg_size(reg0) + reg_offset(reg0) == reg_offset(reg1) ||
-               reg_offset(reg1) + reg_size(reg1) == reg_offset(reg0);
+        unsigned s0 = reg_size_unsigned(reg0);
+        unsigned s1 = reg_size_unsigned(reg1);
+        return reg_offset(reg0) + s0 == reg_offset(reg1) ||
+               reg_offset(reg1) + s1 == reg_offset(reg0);
     }
 };
 }

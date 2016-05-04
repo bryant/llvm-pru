@@ -34,13 +34,13 @@ static void batched_csr_ops(MachineBasicBlock &b,
         dbgs() << "caught " << tri->getName(c->getReg()) << " assigned to "
                << c->getFrameIdx() << "\n";
         auto cc = c;
-        unsigned store_size = PRURegisterInfo::reg_size(cc->getReg());
+        unsigned store_size = PRURegisterInfo::reg_size_unsigned(cc->getReg());
         ++c;
         while (c != csi.cend() && PRURegisterInfo::are_adjacent(
                                       c->getReg(), std::prev(c)->getReg())) {
             dbgs() << "adjacent " << tri->getName(c->getReg())
                    << " assigned to " << c->getFrameIdx() << "\n";
-            store_size += PRURegisterInfo::reg_size(c->getReg());
+            store_size += PRURegisterInfo::reg_size_unsigned(c->getReg());
             ++c;
         }
         const MachineInstrBuilder &batch =
@@ -91,7 +91,7 @@ bool PRUFrameLowering::assignCalleeSavedSpillSlots(
 
     for (CalleeSavedInfo &c : csi) {
         c.setFrameIdx(mfi.CreateStackObject(
-            PRURegisterInfo::reg_size(c.getReg()), 1, true));
+            PRURegisterInfo::reg_size_unsigned(c.getReg()), 1, true));
     }
 
     std::sort(csi.begin(), csi.end(), sort_by_reg_offset);

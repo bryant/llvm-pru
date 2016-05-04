@@ -86,7 +86,7 @@ struct MemLoc {
 
         rv.i = &ii;
         rv.size = op_size(ii);
-        rv.end = rv.start + rv.size - 1;
+        rv.end = rv.start + static_cast<unsigned>(rv.size) - 1;
         return rv;
     }
 
@@ -331,13 +331,13 @@ struct FreeRegs {
     FreePlaces fit(const vector<MemLoc> &mems) const {
         assert(mems.size() > 0);
         FreePlaces rv = this->places_for(mems[0]);
-        unsigned offset = mems[0].size;
+        unsigned offset = static_cast<unsigned>(mems[0].size);
         for (MemLoc m : make_range(std::next(mems.begin()), mems.end())) {
             rv &= this->places_for(m) >> offset;
             if (rv.none()) {
                 return rv;
             } else {
-                offset += m.size;
+                offset += static_cast<unsigned>(m.size);
             }
         }
         return rv;
@@ -470,7 +470,7 @@ struct LoadMerger : public MachineFunctionPass {
                 vector<MemLoc> &memops = cluster.memops;
                 while (memops.size() > 1) {
                     Segment s = {{memops[0]},
-                                 memops[0].size,
+                                 static_cast<unsigned>(memops[0].size),
                                  mask_for(memops[0].size),
                                  covering(memops[0])};
                     memops.erase(memops.begin());
@@ -485,7 +485,7 @@ struct LoadMerger : public MachineFunctionPass {
                             } else {
                                 s.ops.insert(s.ops.begin(), *m);
                             }
-                            s.len_bytes += m->size;
+                            s.len_bytes += static_cast<unsigned>(m->size);
                             s.starts = canplace.first;
                             s.live = s.live.convex(covering(*m));
                             memops.erase(m);
@@ -541,7 +541,7 @@ struct LoadMerger : public MachineFunctionPass {
                             vmap->assignVirt2Phys(destreg, preg);
 
                             memop.i->removeFromParent();
-                            pos += memop.size;
+                            pos += static_cast<unsigned>(memop.size);
                         }
                         li->repairIntervalsInRange(&b, b.begin(), b.end(),
                                                    destvregs);
