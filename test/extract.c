@@ -28,3 +28,18 @@ unsigned low_order_extract2(V a, V b) {
     // CHECK: ADD r14, r14.b0, r15.b0
     return a.c + b.c;
 }
+
+// check for direct subregister access
+unsigned char direct_subregister_access(unsigned int n, unsigned int m) {
+    // CHECK-LABEL: direct_subregister_access:
+    // CHECK: MOV r14, r14.b1
+    return (unsigned char)(n >> 8);
+}
+
+// ironically, this passes. TODO: add dag combine for srl/and expressions
+unsigned char direct_subregister_access2(unsigned int n, unsigned int m) {
+    // CHECK-LABEL: direct_subregister_access2:
+    // CHECK: ADD [[reg:r[0-9]+]].b0, {{(r14.b1|r15.b0)}}, {{(r14.b1|r15.b0)}}
+    // CHECK: MOV r14, [[reg]].b0
+    return (unsigned char)(n >> 8) + m;
+}
