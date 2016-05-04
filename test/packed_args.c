@@ -48,3 +48,20 @@ unsigned larger_than_64_goes_into_stack(Large l) {
     // CHECK: LBBO &{{[^,]+}}, r2, 0, {{.+}} ; batched
     return l.a + l.b + l.c + l.d;
 }
+
+unsigned arg15_fully_in_stack(unsigned arg0, unsigned arg1, unsigned arg2,
+                              unsigned arg3, unsigned arg4, unsigned arg5,
+                              unsigned arg6, unsigned arg7, unsigned arg8,
+                              unsigned arg9, unsigned arg10, unsigned arg11,
+                              unsigned arg12, unsigned arg13, unsigned arg14,
+                              unsigned long long arg15, unsigned short arg16) {
+    // ensure that arg14 and arg16 reside in r28 and r29.w0, respectively. arg15
+    // should be on the stack since i64s are either fully in reg or fully on
+    // stack otherwise.
+
+    // CHECK-LABEL: arg15_fully_in_stack:
+    // CHECK: LBBO &r{{[0-9]+}}, r2, 0, 4
+    // CHECK: ADD r{{[0-9]+}}, r{{[0-9]+}}, r{{[0-9]+}}
+    // CHECK: SUB r14, r{{[0-9]+}}, r{{[0-9]+}}.w0
+    return arg14 + arg15 - arg16;
+}
