@@ -50,7 +50,7 @@ class PRUMCAsmInfo : public MCAsmInfoELF {
 
     bool shouldOmitSectionDirective(StringRef) const override { return true; }
 };
-};
+}
 
 static MCInstrInfo *createPRUMCInstrInfo() {
     MCInstrInfo *X = new MCInstrInfo();

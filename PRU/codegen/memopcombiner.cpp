@@ -220,7 +220,7 @@ bool clusterable_store(const MachineInstr &i) {
         return true;
     }
     return false;
-};
+}
 
 bool is_load_or_store(const MachineInstr &i) {
     if (PRUInstrInfo::is_load(i.getOpcode()) ||
