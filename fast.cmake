@@ -7,6 +7,8 @@ execute_process(
     OUTPUT_VARIABLE ncpu
 )
 
+set(GIT_ORIGIN "file://$ENV{HOME}/usr/git" CACHE STRING "")
+
 message("Building with ${ncpu} cpus")
 set(LLVM_PARALLEL_COMPILE_JOBS ${ncpu} CACHE STRING "")
 set(LLVM_PARALLEL_LINK_JOBS ${ncpu} CACHE STRING "")
