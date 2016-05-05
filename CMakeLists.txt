@@ -47,3 +47,6 @@ execute_process(
             WORKING_DIRECTORY "${LLVM_SOURCE_DIR}/projects")
 
 add_subdirectory("${LLVM_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/llvm")
+
+configure_file("${CMAKE_SOURCE_DIR}/test/lit.cfg.in"
+    "${CMAKE_SOURCE_DIR}/test/lit.cfg")

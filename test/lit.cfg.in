@@ -1,0 +1,16 @@
+from os import path
+from lit.formats import ShTest
+
+def add_filecheck_substs(tool_path=None):
+    tool_path = tool_path or path.join("@LLVM_BINARY_DIR@", "bin")
+
+    for tool in "%clang:clang %llc:llc FileCheck:FileCheck".split():
+        pat, bin = tool.split(":")
+        config.substitutions.append((pat, path.join(tool_path, bin)))
+
+config.test_format = ShTest(execute_external=True)
+config.suffixes = ".c .ll".split()
+config.name = "llvm-pru"
+add_filecheck_substs()
+
+# vim: set syntax=python:
