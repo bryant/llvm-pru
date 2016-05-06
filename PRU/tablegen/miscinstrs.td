@@ -10,14 +10,14 @@ def pru_ldi_i16imm : Instruction {
     let InOperandList = (ins i16imm: $imm);
     let OutOperandList = (outs reg16: $dest);
     let AsmString = "LDI $dest, $imm";
-    let Pattern = [(set i16: $dest, imm: $imm)];
+    let Pattern = [(set i16: $dest, i16imm_65535: $imm)];
 }
 
 def pru_ldi_i8imm : Instruction {
     let InOperandList = (ins i8imm: $imm);
     let OutOperandList = (outs reg8: $dest);
     let AsmString = "LDI $dest, $imm";
-    let Pattern = [(set i8: $dest, imm: $imm)];
+    let Pattern = [(set i8: $dest, i8imm_255: $imm)];
 }
 
 // TODO: expand this pseudo into `ldi r.w0; ldi r.w2`

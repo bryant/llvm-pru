@@ -6,7 +6,7 @@ def i8imm_255 : ImmLeaf<i8, [{return 0 <= Imm && Imm <= 255;}]>;
 def i16imm_255 : ImmLeaf<i16, [{return 0 <= Imm && Imm <= 255;}]>;
 def i32imm_255 : ImmLeaf<i32, [{return 0 <= Imm && Imm <= 255;}]>;
 
-def i16imm_65535 : ImmLeaf<i16, [{return 0 <= Imm && Imm <= 65535}]>;
+def i16imm_65535 : ImmLeaf<i16, [{return 0 <= Imm && Imm <= 65535;}]>;
 def i32imm_65535 : ImmLeaf<i32, [{return 0 <= Imm && Imm <= 65535;}]>;
 
 def jump_target : Operand<OtherVT> { let OperandType = "OPERAND_PCREL"; }
