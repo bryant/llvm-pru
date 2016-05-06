@@ -112,7 +112,7 @@ void PRUFrameLowering::emitPrologue(MachineFunction &f,
                 .addImm(stacksize)
                 .setMIFlag(MachineInstr::FrameSetup);
         } else {
-            BuildMI(b, ins, dl, pruinfo.get(PRU::pru_mov_reg32_i32), PRU::r0)
+            BuildMI(b, ins, dl, pruinfo.get(PRU::pru_ldi32), PRU::r0)
                 .addImm(stacksize);
             BuildMI(b, ins, dl, pruinfo.get(PRU::pru_sub_reg32_reg32_reg32))
                 .addReg(PRU::r2)
@@ -137,7 +137,7 @@ void PRUFrameLowering::emitEpilogue(MachineFunction &f,
                 .addImm(stacksize)
                 .setMIFlag(MachineInstr::FrameSetup);
         } else {
-            BuildMI(b, ins, dl, pruinfo.get(PRU::pru_mov_reg32_i32), PRU::r0)
+            BuildMI(b, ins, dl, pruinfo.get(PRU::pru_ldi32), PRU::r0)
                 .addImm(stacksize);
             BuildMI(b, ins, dl, pruinfo.get(PRU::pru_add_reg32_reg32_reg32))
                 .addReg(PRU::r2)

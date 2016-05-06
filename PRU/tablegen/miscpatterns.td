@@ -49,11 +49,11 @@ def : Pat<
 >;
 
 def : Pat<(targetconst tglobaladdr: $addr),
-          (pru_mov_reg32_i32 tglobaladdr: $addr)>;
+          (pru_ldi32 tglobaladdr: $addr)>;
 def : Pat<(targetconst texternalsym: $addr),
-          (pru_mov_reg32_i32 texternalsym: $addr)>;
+          (pru_ldi32 texternalsym: $addr)>;
 def : Pat<(targetconst tblockaddress: $addr),
-          (pru_mov_reg32_i32 tblockaddress: $addr)>;
+          (pru_ldi32 tblockaddress: $addr)>;
 
 def : Pat<(pru_call tglobaladdr: $calladdr), (call tglobaladdr: $calladdr)>;
 def : Pat<(pru_call texternalsym: $calladdr), (call texternalsym: $calladdr)>;

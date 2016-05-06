@@ -83,7 +83,7 @@ void PRURegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
         unsigned offreg =
             f.getRegInfo().createVirtualRegister(&PRU::reg32RegClass);
         BuildMI(*i.getParent(), i, i.getDebugLoc(),
-                tii.get(PRU::pru_mov_reg32_i32), offreg)
+                tii.get(PRU::pru_ldi32), offreg)
             .addImm(offset);
         i.getOperand(FIOperandNum + 1)
             .ChangeToRegister(offreg, false, false, true);

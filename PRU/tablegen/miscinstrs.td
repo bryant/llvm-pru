@@ -23,10 +23,10 @@ def pru_ldi_i8imm : Instruction {
 // TODO: expand this pseudo into `ldi r.w0; ldi r.w2`
 let isPseudo = 1 in {
 
-def pru_mov_reg32_i32 : Instruction {
+def pru_ldi32 : Instruction {
     let InOperandList = (ins i32imm: $imm);
     let OutOperandList = (outs reg32: $dest);
-    let AsmString = "MOV $dest, $imm";
+    let AsmString = "LDI32 $dest, $imm";
     let Pattern = [(set i32: $dest, imm: $imm)];
 }
 
