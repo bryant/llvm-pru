@@ -15,3 +15,10 @@ unsigned int call_reg16(unsigned short instr_addr) {
     return 3 + ((unsigned int (*)()) instr_addr)();
 }
 
+unsigned call_printf() {
+    // CHECK-LABEL: call_printf
+    // CHECK: SBBO &r3.w2, r2, 0, 0x2
+    // CHECK: JAL r3.w2, {{.+}}
+    printf("printf called\n");
+    return 0;
+}
