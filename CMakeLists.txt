@@ -50,3 +50,24 @@ add_subdirectory("${LLVM_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/llvm")
 
 configure_file("${CMAKE_SOURCE_DIR}/test/lit.cfg.in"
     "${CMAKE_SOURCE_DIR}/test/lit.cfg")
+
+macro(gen2 selector out_file)
+    set(GEN2 "${CMAKE_SOURCE_DIR}/scripts/gen2.hs")
+
+    add_custom_command(
+        OUTPUT "${out_file}"
+        COMMAND runghc ${GEN2} "${selector}" > "${out_file}")
+endmacro(gen2)
+
+set(PRU_GENERATED_DIR "${CMAKE_SOURCE_DIR}/PRU/generated")
+gen2("decls" "${PRU_GENERATED_DIR}/instructions.td")
+gen2("pats" "${PRU_GENERATED_DIR}/patterns.td")
+gen2("reverse" "${PRU_GENERATED_DIR}/reversed_branches.h")
+gen2("selectcc" "${PRU_GENERATED_DIR}/select_to_branch.h")
+
+add_custom_target(generated
+    DEPENDS "${PRU_GENERATED_DIR}/instructions.td"
+            "${PRU_GENERATED_DIR}/patterns.td"
+            "${PRU_GENERATED_DIR}/reversed_branches.h"
+            "${PRU_GENERATED_DIR}/select_to_branch.h")
+add_dependencies(LLVMPRUCodeGen generated)
