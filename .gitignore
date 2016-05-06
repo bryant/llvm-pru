@@ -3,3 +3,5 @@
 *.hi
 ignored/
 PRU/generated/
+third/
+build/
