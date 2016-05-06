@@ -51,9 +51,7 @@ void PRUInstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
     if (Op.isReg()) {
         O << getRegisterName(Op.getReg());
     } else if (Op.isImm()) {
-        // TODO: fix handling of negative immediates
-        uint64_t val = static_cast<uint64_t>(Op.getImm()) & 0xffffffff;
-        O << formatHex(val);
+        O << formatHex(static_cast<uint64_t>(Op.getImm()) & 0xffffffff);
     } else {
         assert(Op.isExpr() && "unknown operand kind in printOperand");
         // O << '#';

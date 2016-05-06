@@ -309,6 +309,21 @@ void PRUAsmPrinter::EmitInstruction(const MachineInstr *MI) {
 
     MCInst TmpInst;
     MCInstLowering.Lower(MI, TmpInst);
+
+    // fix up immediates. exploit the fact that immediate operands of non-LDI
+    // are always < 256
+    if (!MI->isMoveImmediate()) {
+        for (MCOperand &oper : TmpInst) {
+            if (oper.isImm()) {
+                oper.setImm(static_cast<uint64_t>(oper.getImm()) & 0xff);
+            }
+        }
+    } else if (TmpInst.getOpcode() != PRU::pru_ldi32) {
+        // LDI variants have sixteen-bit wide immediate.
+        MCOperand &oper = TmpInst.getOperand(1);
+        oper.setImm(static_cast<uint64_t>(oper.getImm()) & 0xffff);
+    }
+
     EmitToStreamer(*OutStreamer, TmpInst);
 }
 
