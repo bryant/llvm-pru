@@ -152,7 +152,8 @@ SDValue PRUTargetLowering::LowerFormalArguments(
 static SDValue lower_call_addr(SDValue addr, SDLoc dl, SelectionDAG &sdag) {
     MVT ptrvt = MVT::getIntegerVT(sdag.getDataLayout().getPointerSizeInBits(0));
     if (GlobalAddressSDNode *callee = dyn_cast<GlobalAddressSDNode>(addr)) {
-        return sdag.getTargetGlobalAddress(callee->getGlobal(), dl, ptrvt, 0);
+        return sdag.getTargetGlobalAddress(callee->getGlobal(), dl, ptrvt,
+                                           callee->getOffset());
     } else if (ExternalSymbolSDNode *s = dyn_cast<ExternalSymbolSDNode>(addr)) {
         return sdag.getTargetExternalSymbol(s->getSymbol(), ptrvt, 0);
     } else {
