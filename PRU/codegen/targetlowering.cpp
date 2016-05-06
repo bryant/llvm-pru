@@ -92,18 +92,29 @@ SDValue PRUTargetLowering::LowerOperation(SDValue op, SelectionDAG &dag) const {
     op.dump();
     dbgs() << "\n";
 
+    MVT ptrvt = getPointerTy(dag.getDataLayout());
+    auto get_target_const = [&](SDValue inner) {
+        return dag.getNode(PRUISD::TargetConst, SDLoc(op), ptrvt, inner);
+    };
+
     switch (op.getOpcode()) {
-    case ISD::GlobalAddress:
-        return dag.getNode(PRUISD::TargetConst, SDLoc(op),
-                           getPointerTy(dag.getDataLayout()), op);
+    case ISD::GlobalAddress: {
+        const auto *gop = cast<GlobalAddressSDNode>(op);
+        return get_target_const(dag.getTargetGlobalAddress(
+            gop->getGlobal(), SDLoc(op), ptrvt, gop->getOffset()));
+    }
 
-    case ISD::BlockAddress:
-        return dag.getNode(PRUISD::TargetConst, SDLoc(op),
-                           getPointerTy(dag.getDataLayout()), op);
+    case ISD::BlockAddress: {
+        const auto *bop = cast<BlockAddressSDNode>(op);
+        return get_target_const(dag.getTargetBlockAddress(
+            bop->getBlockAddress(), ptrvt, bop->getOffset()));
+    }
 
-    case ISD::ExternalSymbol:
-        return dag.getNode(PRUISD::TargetConst, SDLoc(op),
-                           getPointerTy(dag.getDataLayout()), op);
+    case ISD::ExternalSymbol: {
+        const auto *ext = cast<ExternalSymbolSDNode>(op);
+        return get_target_const(dag.getTargetExternalSymbol(
+            ext->getSymbol(), ptrvt, ext->getTargetFlags()));
+    }
     }
 
     dbgs() << "LowerOperation: op was " << op.getNode()->getOperationName()

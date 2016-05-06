@@ -38,3 +38,6 @@ def sdt_call : SDTypeProfile<0, -1, [SDTCisPtrTy<0>]>;
 def pru_call : SDNode<"PRUISD::CALL",
                       sdt_call,
                       [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue, SDNPVariadic]>;
+
+def targetconst : SDNode<"PRUISD::TargetConst",
+                         SDTypeProfile<1, 1, [SDTCisPtrTy<0>, SDTCisPtrTy<1>]>>;
