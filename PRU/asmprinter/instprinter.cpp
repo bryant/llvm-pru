@@ -1,9 +1,13 @@
-#include "instprinter.h"
+#include <sstream>
+
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCInst.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/FormattedStream.h"
+
+#include "instprinter.h"
+
 using namespace llvm;
 
 #define DEBUG_TYPE "asm-printer"
@@ -29,6 +33,20 @@ void PRUInstPrinter::print_addr(const MCInst *inst, unsigned opnum,
         out << getRegisterName(offset.getReg());
     } else {
         llvm_unreachable("offset operand was neither imm nor reg!");
+    }
+}
+
+void PRUInstPrinter::print_reglist(const MCInst *i, unsigned opnum,
+                                   raw_ostream &out) {
+    assert(i->getOperand(opnum).isReg());
+    out << getRegisterName(i->getOperand(opnum).getReg());
+
+    if (CommentStream) {
+        std::ostringstream reglist("batched:", std::ios::ate);
+        for (; opnum < i->getNumOperands(); opnum += 1) {
+            reglist << " " << getRegisterName(i->getOperand(opnum).getReg());
+        }
+        (*CommentStream) << reglist.str() << '\n';
     }
 }
 

@@ -291,24 +291,8 @@ bool PRUAsmPrinter::PrintAsmMemoryOperand(const MachineInstr *MI, unsigned OpNo,
 
 //===----------------------------------------------------------------------===//
 void PRUAsmPrinter::EmitInstruction(const MachineInstr *MI) {
-    if ((PRUInstrInfo::is_load_multiple(MI->getOpcode()) ||
-         PRUInstrInfo::is_store_multiple(MI->getOpcode())) &&
-        MI->getNumOperands() > 4) {
-
-        raw_ostream &c = OutStreamer->GetCommentOS();
-
-        c << "batched:";
-        for (unsigned opnum = 3; opnum < MI->getNumOperands(); opnum += 1) {
-            c << " " << PRUInstPrinter::getRegisterName(
-                            MI->getOperand(opnum).getReg());
-        }
-        OutStreamer->AddComment("");
-    }
-
-    PRUMCInstLower MCInstLowering(OutContext, *this);
-
     MCInst TmpInst;
-    MCInstLowering.Lower(MI, TmpInst);
+    PRUMCInstLower(OutContext, *this).Lower(MI, TmpInst);
 
     // fix up immediates. exploit the fact that immediate operands of non-LDI
     // are always < 256
