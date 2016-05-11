@@ -24,6 +24,8 @@ class PRUPassConfig : public TargetPassConfig {
         return false;
     }
 
+    void addPreRegAlloc() override { addPass(new_hard_loops()); }
+
     bool addPreRewrite() override {
         if (EnableCombiner2) {
             addPass(new_load_merger());

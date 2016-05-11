@@ -58,3 +58,23 @@ def : Pat<(targetconst tblockaddress: $addr),
 def : Pat<(pru_call tglobaladdr: $calladdr), (call tglobaladdr: $calladdr)>;
 def : Pat<(pru_call texternalsym: $calladdr), (call texternalsym: $calladdr)>;
 def : Pat<(pru_call reg32: $calladdr), (call reg32: $calladdr)>;
+
+def : Pat<(add reg32: $src, i32imm_neg_within_255: $imm),
+          (pru_sub_reg32_reg32_i32imm reg32: $src, i32imm_neg_within_255: $imm)>;
+def : Pat<(add reg16: $src, i16imm_neg_within_255: $imm),
+          (pru_sub_reg16_reg16_i16imm reg16: $src, i16imm_neg_within_255: $imm)>;
+def : Pat<(add reg8: $src, i8imm_neg_within_255: $imm),
+          (pru_sub_reg8_reg8_i8imm reg8: $src, i8imm_neg_within_255: $imm)>;
+
+def : Pat<(sub reg32: $src, i32imm_neg_within_255: $imm),
+          (pru_add_reg32_reg32_i32imm reg32: $src, i32imm_neg_within_255: $imm)>;
+def : Pat<(sub reg16: $src, i16imm_neg_within_255: $imm),
+          (pru_add_reg16_reg16_i16imm reg16: $src, i16imm_neg_within_255: $imm)>;
+def : Pat<(sub reg8: $src, i8imm_neg_within_255: $imm),
+          (pru_add_reg8_reg8_i8imm reg8: $src, i8imm_neg_within_255: $imm)>;
+
+// TODO: matching on zext-ed result is useful for all non-overflowing binops
+def : Pat<(i32 (zext (xor reg8: $src, i8imm_255: $imm))),
+          (pru_xor_reg32_reg8_i8imm reg8: $src, i8imm_255: $imm)>;
+def : Pat<(i16 (zext (xor reg8: $src, i8imm_255: $imm))),
+          (pru_xor_reg16_reg8_i8imm reg8: $src, i8imm_255: $imm)>;

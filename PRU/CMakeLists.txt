@@ -22,6 +22,7 @@ add_llvm_target(PRUCodeGen
     codegen/subtarget.cpp
     codegen/targetmachine.cpp
     codegen/memopcombiner.cpp
+    codegen/hardloops.cpp
     PRUAsmPrinter.cpp
 )
 

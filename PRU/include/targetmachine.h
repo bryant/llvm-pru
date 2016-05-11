@@ -34,5 +34,6 @@ class PRUTargetMachine : public LLVMTargetMachine {
 namespace pru {
 using namespace llvm;
 FunctionPass *new_load_merger();
+FunctionPass *new_hard_loops();
 FunctionPass *new_pru_isel(TargetMachine &, CodeGenOpt::Level);
 }

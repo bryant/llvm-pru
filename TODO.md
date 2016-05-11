@@ -24,5 +24,6 @@
 - [x] follow ti's calling and return conventions
 - [ ] hardware multiplier via xin
 - [ ] tail calls
+- [ ] lower setcc
 
 ` vim: set syntax=markdown textwidth=0 tabstop=2 shiftwidth=2 nolist: `

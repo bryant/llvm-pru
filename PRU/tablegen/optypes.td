@@ -9,6 +9,27 @@ def i32imm_255 : ImmLeaf<i32, [{return (uint32_t) Imm <= 255;}]>;
 def i16imm_65535 : ImmLeaf<i16, [{return (uint16_t) Imm <= 65535;}]>;
 def i32imm_65535 : ImmLeaf<i32, [{return (uint32_t) Imm <= 65535;}]>;
 
+def i8imm_neg_within_255 : ImmLeaf<i8, [{
+    return 0 <= -Imm && -Imm <= 255;
+}], SDNodeXForm<imm, [{
+    return CurDAG->getTargetConstant((unsigned) (-N->getSExtValue()), SDLoc(N),
+                                     MVT::i8);
+}]>>;
+
+def i16imm_neg_within_255 : ImmLeaf<i16, [{
+    return 0 <= -Imm && -Imm <= 255;
+}], SDNodeXForm<imm, [{
+    return CurDAG->getTargetConstant((unsigned) (-N->getSExtValue()), SDLoc(N),
+                                     MVT::i16);
+}]>>;
+
+def i32imm_neg_within_255 : ImmLeaf<i32, [{
+    return 0 <= -Imm && -Imm <= 255;
+}], SDNodeXForm<imm, [{
+    return CurDAG->getTargetConstant((unsigned) (-N->getSExtValue()), SDLoc(N),
+                                     MVT::i32);
+}]>>;
+
 def jump_target : Operand<OtherVT> { let OperandType = "OPERAND_PCREL"; }
 
 def gaddr : Operand<iPTR>;
