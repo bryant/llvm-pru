@@ -16,9 +16,7 @@ using namespace llvm;
 #include "instrinfo.inc"
 
 PRUInstrInfo::PRUInstrInfo(PRUSubtarget &STI)
-    : PRUGenInstrInfo() //(PRU::ADJCALLSTACKDOWN, PRU::ADJCALLSTACKUP)
-      ,
-      RI() {}
+    : PRUGenInstrInfo(PRU::addcallstack, PRU::subcallstack), RI() {}
 
 bool PRUInstrInfo::areLoadsFromSameBasePtr(SDNode *load0, SDNode *load1,
                                            int64_t &off0, int64_t &off1) const {

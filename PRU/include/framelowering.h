@@ -13,6 +13,10 @@ class PRUFrameLowering : public TargetFrameLowering {
     void emitEpilogue(MachineFunction &, MachineBasicBlock &) const override;
     bool hasFP(const MachineFunction &MF) const override;
 
+    void
+    eliminateCallFramePseudoInstr(MachineFunction &, MachineBasicBlock &,
+                                  MachineBasicBlock::iterator) const override;
+
     bool spillCalleeSavedRegisters(MachineBasicBlock &,
                                    MachineBasicBlock::iterator,
                                    const std::vector<CalleeSavedInfo> &,

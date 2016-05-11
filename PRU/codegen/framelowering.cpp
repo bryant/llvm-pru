@@ -54,6 +54,12 @@ static void batched_csr_ops(MachineBasicBlock &b,
     }
 }
 
+void PRUFrameLowering::eliminateCallFramePseudoInstr(
+    MachineFunction &f, MachineBasicBlock &mbb,
+    MachineBasicBlock::iterator i) const {
+    mbb.erase(i);
+}
+
 bool PRUFrameLowering::spillCalleeSavedRegisters(
     MachineBasicBlock &b, MachineBasicBlock::iterator ii,
     const std::vector<CalleeSavedInfo> &csi,
