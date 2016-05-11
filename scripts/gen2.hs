@@ -409,11 +409,13 @@ all_insts = pru_add ++ pru_sub ++ pru_rsb ++ pru_lsl ++ pru_lsr ++ pru_and ++
 main = do
     args <- getArgs
     case args of
-        [which] -> case which of
-            "decls" -> putStrLn . unlines $ map decl all_insts
-            "pats" -> putStrLn . unlines $ map (unlines . pat_decls) all_insts
-            "selectcc" -> putStrLn $ unlines select_branch_table
-            "reverse" -> putStrLn $ unlines reversed_branches
+        [which, outfile] ->
+            let output | outfile == "-" = putStrLn
+                       | otherwise = writeFile outfile in case which of
+            "decls" -> output . unlines $ map decl all_insts
+            "pats" -> output . unlines $ map (unlines . pat_decls) all_insts
+            "selectcc" -> output $ unlines select_branch_table
+            "reverse" -> output $ unlines reversed_branches
             _ -> usage
         _ -> usage
-    where usage = putStrLn "gen2 (decls|pats|selectcc|reverse)"
+    where usage = putStrLn "gen2 (decls|pats|selectcc|reverse) output_file"

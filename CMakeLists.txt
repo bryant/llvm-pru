@@ -54,7 +54,8 @@ macro(gen2 selector out_file)
 
     add_custom_command(
         OUTPUT "${out_file}"
-        COMMAND runghc ${GEN2} "${selector}" > "${out_file}")
+        COMMAND runghc ${GEN2} "${selector}" "${out_file}"
+        DEPENDS "${GEN2}")
 endmacro(gen2)
 
 set(PRU_GENERATED_DIR "${CMAKE_SOURCE_DIR}/PRU/generated")
