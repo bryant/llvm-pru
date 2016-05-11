@@ -1,5 +1,6 @@
 // RUN: %clang -O3 -S -o - -target pru -fverbose-asm -mllvm -bbo-combiner2 %s \
 // RUN:     | FileCheck %s
+// RUN: %clang -O0 -S -o /dev/null -target pru %s
 
 unsigned int weird_jump(unsigned int (*jump_point)()) {
     // CHECK-LABEL: weird_jump:
@@ -20,5 +21,6 @@ unsigned call_printf() {
     // CHECK: SBBO &r3.w2, r2, 0, 0x2
     // CHECK: JAL r3.w2, {{.+}}
     printf("printf called\n");
+    printf("again, called\n");
     return 0;
 }

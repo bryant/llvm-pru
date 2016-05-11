@@ -1,4 +1,5 @@
 // RUN: %clang -O3 -S -o - -target pru -mllvm -bbo-combiner2 %s | FileCheck %s
+// RUN: %clang -O0 -S -o /dev/null -target pru %s
 
 unsigned cond_test_simple(unsigned char selector) {
     unsigned rv;

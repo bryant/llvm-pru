@@ -1,4 +1,5 @@
 // RUN: %clang -O3 -S -o - -target pru %s | FileCheck %s
+// RUN: %clang -O0 -S -o /dev/null -target pru %s
 
 // check that immediate operands are printed correctly, e.g., "0x80" instead of
 // "0xffffff80".

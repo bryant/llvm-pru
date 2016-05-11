@@ -1,4 +1,5 @@
 // RUN: %clang -O3 -S -o - -target pru %s | FileCheck %s
+// RUN: %clang -O0 -S -o /dev/null -target pru %s
 
 unsigned char zextadd(unsigned int a, unsigned short b) {
     // CHECK-LABEL: zextadd:

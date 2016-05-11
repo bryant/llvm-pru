@@ -1,5 +1,6 @@
 // RUN: %clang -O3 -S -o - -target pru -fverbose-asm -mllvm -bbo-combiner2 %s \
 // RUN:     | FileCheck %s
+// RUN: %clang -O0 -S -o /dev/null -target pru %s
 
 #pragma pack(1)
 

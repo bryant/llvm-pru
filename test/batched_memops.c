@@ -1,6 +1,7 @@
 // RUN: %clang -O3 -S -o - -target pru -fverbose-asm -mllvm -bbo-combiner2 %s \
 // RUN:     | FileCheck -check-prefix=BATCHED %s
 // RUN: %clang -O3 -S -o - -target pru %s | FileCheck -check-prefix=UNBATCHED %s
+// RUN: %clang -O0 -S -o /dev/null -target pru %s
 
 #pragma pack(1)
 
