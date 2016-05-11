@@ -45,6 +45,7 @@ BitVector PRURegisterInfo::getReservedRegs(const MachineFunction &MF) const {
     };
 
     mark_reserved(PRU::r2);  // stack pointer
+    mark_reserved(PRU::r4);  // emergency spill
     mark_reserved(PRU::r30); // aliased to io
     mark_reserved(PRU::r31); // " " "
 
@@ -80,13 +81,11 @@ void PRURegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
            << mf.getObjectOffset(idx) << "; offset = " << offset << "\n";
     if (offset > 256) {
         const auto &tii = *f.getSubtarget().getInstrInfo();
-        unsigned offreg =
-            f.getRegInfo().createVirtualRegister(&PRU::reg32RegClass);
-        BuildMI(*i.getParent(), i, i.getDebugLoc(),
-                tii.get(PRU::pru_ldi32), offreg)
+        BuildMI(*i.getParent(), i, i.getDebugLoc(), tii.get(PRU::pru_ldi32),
+                PRU::r4)
             .addImm(offset);
         i.getOperand(FIOperandNum + 1)
-            .ChangeToRegister(offreg, false, false, true);
+            .ChangeToRegister(PRU::r4, false, false, true);
     } else {
         i.getOperand(FIOperandNum + 1).ChangeToImmediate(offset);
     }

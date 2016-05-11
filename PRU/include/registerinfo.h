@@ -37,14 +37,6 @@ struct PRURegisterInfo : public PRUGenRegisterInfo {
                              unsigned FIOperandNum,
                              RegScavenger *RS = nullptr) const override;
 
-    bool requiresRegisterScavenging(const MachineFunction &) const override {
-        return true;
-    }
-
-    bool requiresFrameIndexScavenging(const MachineFunction &) const override {
-        return true;
-    }
-
     // Debug information queries.
     unsigned getFrameRegister(const MachineFunction &MF) const override;
 

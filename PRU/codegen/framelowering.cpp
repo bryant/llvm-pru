@@ -88,6 +88,17 @@ bool PRUFrameLowering::assignCalleeSavedSpillSlots(
                PRURegisterInfo::reg_offset(b.getReg());
     };
 
+    auto has_spilled = [&](unsigned reg) {
+        return std::find_if(csi.begin(), csi.end(),
+                            [&](const CalleeSavedInfo &c) {
+                                return c.getReg() == reg;
+                            }) != csi.end();
+    };
+
+    if (has_spilled(PRU::r3_w2) && has_spilled(PRU::r5)) {
+        csi.push_back(CalleeSavedInfo(PRU::r4));
+    }
+
     std::sort(csi.begin(), csi.end(),
               [&](const CalleeSavedInfo &a, const CalleeSavedInfo &b) {
                   return !sort_by_reg_offset(a, b);
