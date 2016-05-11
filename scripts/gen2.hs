@@ -20,8 +20,8 @@ type DOp = Operand DagOp
 type MOp = Operand MachineOp
 
 data CondCode
-    = SETNE | SETEQ | SETGT | SETGE | SETLT | SETLE
-                    | SETUGT | SETUGE | SETULT | SETULE
+    = SETNE | SETEQ | SETGT | SETGE | SETLT | SETLE |
+      SETUNE | SETUEQ | SETUGT | SETUGE | SETULT | SETULE
     deriving Show
 
 data SDNode
@@ -217,7 +217,8 @@ simple_br pref mpref cc (lhs, rhs) =
                 (qb_pats cc)
                 [IsBranch True, IsTerminator True]
     where
-    qb_pats cc ins@[jt, l, r] = [Brcc cc l' r' (SDOp $ fmap to_sdty jt)]
+    qb_pats ccs ins@[jt, l, r] = [Brcc cc l' r' (SDOp $ fmap to_sdty jt)
+                                    | cc <- ccs]
         where
         exts = ext_largest ZExt $ map (mop_width . op_op) [l, r]
         [l', r'] = zipWith ($) exts $ map (SDOp . fmap to_sdty) [l, r]
@@ -310,12 +311,12 @@ jal reg (reg / label)
 'ret
 -}
 
-pru_qbgt = map (simple_br "pru_qbgt" "qbgt" SETUGT) $ r_op 255
-pru_qbge = map (simple_br "pru_qbge" "qbge" SETUGE) $ r_op 255
-pru_qblt = map (simple_br "pru_qblt" "qblt" SETULT) $ r_op 255
-pru_qble = map (simple_br "pru_qble" "qble" SETULE) $ r_op 255
-pru_qbeq = map (simple_br "pru_qbeq" "qbeq" SETEQ) $ r_op 255
-pru_qbne = map (simple_br "pru_qbne" "qbne" SETNE) $ r_op 255
+pru_qbgt = [simple_br "pru_qbgt" "qbgt" [SETGT, SETUGT] rops | rops <- r_op 255]
+pru_qbge = [simple_br "pru_qbge" "qbge" [SETGE, SETUGE] rops | rops <- r_op 255]
+pru_qblt = [simple_br "pru_qblt" "qblt" [SETLT, SETULT] rops | rops <- r_op 255]
+pru_qble = [simple_br "pru_qble" "qble" [SETLE, SETULE] rops | rops <- r_op 255]
+pru_qbeq = [simple_br "pru_qbeq" "qbeq" [SETEQ, SETUEQ] rops | rops <- r_op 255]
+pru_qbne = [simple_br "pru_qbne" "qbne" [SETNE, SETUNE] rops | rops <- r_op 255]
 
 pru_qba =
     [Instruction "pru_qba" [] [JumpTarg] (mnem "qba") (br_pats JumpTarg)
