@@ -165,12 +165,12 @@ static SDValue lower_call_addr(SDValue addr, SDLoc dl, SelectionDAG &sdag) {
 
 SDValue PRUTargetLowering::LowerCall(CallLoweringInfo &call,
                                      SmallVectorImpl<SDValue> &retvals) const {
-    // TODO: impl
-    assert(!call.IsVarArg);
     assert(call.CallConv == CallingConv::Fast ||
            call.CallConv == CallingConv::C);
 
+    // TODO: impl
     call.IsTailCall = false;
+    call.IsVarArg = false;
 
     TexasCC cc(call.DAG, call.IsVarArg);
     SDValue space = call.DAG.getIntPtrConstant(cc.compute_call_stack(call.Outs),
