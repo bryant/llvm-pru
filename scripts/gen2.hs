@@ -189,6 +189,13 @@ ext_or_trunc ext dwidth iwidths =
         | iwidth > op_width = CoerceTo op_width . Trunc
         | otherwise = id
 
+ext_or_trunc_to_sdty :: (SDNode -> SDNode) -> Int -> MOp -> SDNode
+ext_or_trunc_to_sdty ext dwidth inop
+    | mop_width (op_op inop) < dwidth = CoerceTo dwidth $ ext sdinop
+    | mop_width (op_op inop) > dwidth = CoerceTo dwidth $ Trunc sdinop
+    | otherwise = sdinop
+    where sdinop = SDOp $ fmap to_sdty inop
+
 ext_largest ext iwidths = map (`ext_to` maximum iwidths) iwidths
     where
     k `ext_to` n
@@ -209,6 +216,14 @@ pats op dest ins@(_:_) =
     sdops = map (SDOp . fmap to_sdty) ins
 pats _ _ _ = error "pats only used for instructions with at least one operand"
 
+alu_pats mkop dest ins@(_:_)
+    | dwidth >= maximum (map (mop_width . op_op) ins) =
+        [mkop $ map (ext_or_trunc_to_sdty ext dwidth) ins
+            | ext <- [AnyExt, ZExt]]
+    | otherwise = []
+    where dwidth = mop_width dest
+alu_pats _ _ _ = error "instruction needs least one operand"
+
 br_pats JumpTarg [jmptarget] = [Br . SDOp $ fmap to_sdty jmptarget]
 br_pats _ _ = []
 
@@ -225,14 +240,14 @@ simple_br pref mpref cc (lhs, rhs) =
 
 alu_bin_op pref mpref op (dest, lhs, rhs) =
     Instruction (mangled pref [dest, lhs, rhs]) [dest] [lhs, rhs] (mnem mpref)
-                (pats op' dest) attrs
+                (alu_pats op' dest) attrs
     where
     attrs | Imm _ _ <- rhs = [IsRematerializable True] | otherwise = []
     op' [l, r] = op l r
 
 alu_un_op p mp op (dest, src) =
-    Instruction (mangled p [dest, src]) [dest] [src] (mnem mp) (pats op' dest)
-                []
+    Instruction (mangled p [dest, src]) [dest] [src] (mnem mp)
+                (alu_pats op' dest) []
     where op' [l] = op l
 
 pru_add = map (alu_bin_op "pru_add" "add" (SDBinOp "add")) $ r_r_op 255
