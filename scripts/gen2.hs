@@ -250,12 +250,28 @@ alu_un_op p mp op (dest, src) =
                 (alu_pats op' dest) []
     where op' [l] = op l
 
+asymmetric_bin_op pref machinepref op (dest, src, shift) =
+    Instruction (mangled pref [dest, src, shift]) [dest] [src, shift]
+                (mnem machinepref) gen_asymm_pats attrs
+    where
+    attrs | Imm _ _ <- shift = [IsRematerializable True] | otherwise = []
+    gen_asymm_pats [src', shift']
+        | dwidth >= mop_width (op_op src') = concat $
+            [[op (ext_or_trunc_to_sdty ext dwidth src') sdshift,
+              op (ext_or_trunc_to_sdty ext dwidth src')
+                 (ext_or_trunc_to_sdty ext dwidth shift')]
+            | ext <- [AnyExt, ZExt]]
+        | otherwise = []
+        where
+        sdshift = SDOp $ fmap to_sdty shift'
+        dwidth = mop_width dest
+
 pru_add = map (alu_bin_op "pru_add" "add" (SDBinOp "add")) $ r_r_op 255
 pru_sub = map (alu_bin_op "pru_sub" "sub" (SDBinOp "sub")) $ r_r_op 255
 pru_rsb = map (alu_bin_op "pru_rsc" "rsc" (flip $ SDBinOp "sub")) $ r_r_op 255
 
-pru_lsl = map (alu_bin_op "pru_lsl" "lsl" (SDBinOp "shl")) $ r_r_op 31
-pru_lsr = map (alu_bin_op "pru_lsr" "lsr" (SDBinOp "srl")) $ r_r_op 31
+pru_lsl = map (asymmetric_bin_op "pru_lsl" "lsl" (SDBinOp "shl")) $ r_r_op 31
+pru_lsr = map (asymmetric_bin_op "pru_lsr" "lsr" (SDBinOp "srl")) $ r_r_op 31
 
 pru_and = map (alu_bin_op "pru_and" "and" (SDBinOp "and")) $ r_r_op 255
 pru_or = map (alu_bin_op "pru_or" "or" (SDBinOp "or")) $ r_r_op 255
