@@ -78,6 +78,16 @@ bool PRUFrameLowering::restoreCalleeSavedRegisters(
     return true;
 }
 
+void PRUFrameLowering::determineCalleeSaves(MachineFunction &f,
+                                            BitVector &saved,
+                                            RegScavenger *regscav) const {
+    TargetFrameLowering::determineCalleeSaves(f, saved, regscav);
+    if (saved[PRU::r3_w2] &&
+        (saved[PRU::r5] || saved[PRU::r5_w2] || saved[PRU::r5_b0])) {
+        saved.set(PRU::r4);
+    }
+}
+
 bool PRUFrameLowering::assignCalleeSavedSpillSlots(
     MachineFunction &f, const TargetRegisterInfo *tri,
     std::vector<CalleeSavedInfo> &csi) const {
@@ -87,17 +97,6 @@ bool PRUFrameLowering::assignCalleeSavedSpillSlots(
         return PRURegisterInfo::reg_offset(a.getReg()) <
                PRURegisterInfo::reg_offset(b.getReg());
     };
-
-    auto has_spilled = [&](unsigned reg) {
-        return std::find_if(csi.begin(), csi.end(),
-                            [&](const CalleeSavedInfo &c) {
-                                return c.getReg() == reg;
-                            }) != csi.end();
-    };
-
-    if (has_spilled(PRU::r3_w2) && has_spilled(PRU::r5)) {
-        csi.push_back(CalleeSavedInfo(PRU::r4));
-    }
 
     std::sort(csi.begin(), csi.end(),
               [&](const CalleeSavedInfo &a, const CalleeSavedInfo &b) {
