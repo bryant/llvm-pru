@@ -41,7 +41,7 @@ void PRUInstPrinter::print_reglist(const MCInst *i, unsigned opnum,
     assert(i->getOperand(opnum).isReg());
     out << getRegisterName(i->getOperand(opnum).getReg());
 
-    if (CommentStream) {
+    if (CommentStream && i->getNumOperands() - opnum > 1) {
         std::ostringstream reglist("batched:", std::ios::ate);
         for (; opnum < i->getNumOperands(); opnum += 1) {
             reglist << " " << getRegisterName(i->getOperand(opnum).getReg());
