@@ -276,7 +276,8 @@ struct TexasCC : public CC {
         SDValue basereg = sdag.getCopyFromReg(ch, dl, PRU::r2, ptrvt);
 
         unsigned v = 0;
-        for (ArrayRef<OutputArg> members : collect_members(args)) {
+        vector<vector<OutputArg>> member_groups = collect_members(args);
+        for (ArrayRef<OutputArg> members : member_groups) {
             if (members[0].Flags.isByVal()) {
                 assert(members.size() == 1);
                 unsigned size = members[0].Flags.getByValSize();
