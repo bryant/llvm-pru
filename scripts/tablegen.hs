@@ -6,14 +6,6 @@ import Control.Monad.Trans.State (State)
 import GHC.TypeLits (Symbol, Nat, CmpNat, KnownNat, natVal)
 import Data.Proxy (Proxy(Proxy))
 
-data Tup (as :: [*]) where
-    TupNil :: Tup '[]
-    TupCons :: PatternArg a -> Tup xs -> Tup (a ': xs)
-
-type family TupFunc (a :: [*]) b  where
-    TupFunc '[] b = b
-    TupFunc (a ': as) b = a -> TupFunc as b
-
 data PatternArg a = PatternArg Int
 
 data MachineNode
