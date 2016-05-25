@@ -20,17 +20,18 @@ data IAttr
     | IsPseudo Bool | IsMoveImm Bool | Uses [String] | Defs [String]
     | UsesCustomInserter Bool | IsBarrier Bool | IsRematerializable Bool
 
-data SDNode (a :: SDKind) where
-    SDUnOp :: SDIsInt a => String -> SDNode a -> SDNode a
-    SDBinOp :: SDIsInt a => String -> SDNode a -> SDNode a -> SDNode a
-    SDShiftOp :: (SDIsInt a, SDIsInt b) => String -> SDNode a -> SDNode b
-              -> SDNode a
-    SDTruncOp :: SDGT a b => SDNode a -> SDNode b
-    SDExtOp :: SDGT b a => String -> SDNode a -> SDNode b
-    SDBuildPair :: SDGT b a => SDNode a -> SDNode a -> SDNode b
-    SDLoadOp :: SDIsInt a => SDNode SDPtr -> SDNode a
-    SDStoreOp :: SDIsInt a => SDNode SDPtr -> SDNode a -> SDNode SDUnit
-    SDPatLeaf :: TypeShow a => String -> Int -> SDNode a
+-- kind that denotes SDNode leaf-ness
+data LeafKind = L | N
+
+data SDNode (l :: LeafKind) (a :: SDKind) where
+    SDUnOp :: SDIsInt a => String -> SDNode l a -> SDNode N a
+    SDBinOp :: SDIsInt a => String -> SDNode k a -> SDNode l a -> SDNode N a
+    SDShiftOp :: (SDIsInt a, SDIsInt b) => String -> SDNode k a -> SDNode l b
+              -> SDNode N a
+    SDTruncOp :: SDGT a b => SDNode l a -> SDNode N b
+    SDExtOp :: SDGT b a => String -> SDNode l a -> SDNode N b
+    SDBuildPair :: SDGT b a => SDNode k a -> SDNode l a -> SDNode N b
+    SDPatLeaf :: TypeShow a => String -> Int -> SDNode L a
 
 -- Operand kind
 data SDKind = SDI Nat | Imm Nat | SDPtr | SDUnit | BasicBlock
@@ -47,7 +48,7 @@ type family SDKindWidth a where
 type family SDGT a b where
     SDGT m n = CmpNat (SDKindWidth m) (SDKindWidth n) ~ GT
 
-data ExistSDNode = forall a. E_ (SDNode a)
+data ExistSDNode = forall l a. E_ (SDNode l a)
 
 -- TODO: `show` expects a haskell-readable output. consider switching to a
 -- different typeclass.
@@ -55,7 +56,7 @@ instance Show ExistSDNode where
     show (E_ node@SDPatLeaf{}) = show node
     show (E_ node) = parens $ show node
 
-instance Show (SDNode a) where
+instance Show (SDNode l a) where
     show (SDUnOp opname n) = op_print opname [E_ n]
     show (SDBinOp opname l r) = op_print opname [E_ l, E_ r]
     show (SDShiftOp opname src sh) = op_print opname [E_ src, E_ sh]
@@ -89,13 +90,13 @@ parens xs = "(" ++ xs ++ ")"
 
 type TableGen = State Int
 
-i32 :: TableGen (SDNode (SDI 32))
+i32 :: TableGen (SDNode L (SDI 32))
 i32 = SDPatLeaf "" <$> next_int
 
-i16 :: TableGen (SDNode (SDI 16))
+i16 :: TableGen (SDNode L (SDI 16))
 i16 = SDPatLeaf "" <$> next_int
 
-i8 :: TableGen (SDNode (SDI 8))
+i8 :: TableGen (SDNode L (SDI 8))
 i8 = SDPatLeaf "" <$> next_int
 
 next_int = State.get >>= \n -> State.modify (+ 1) >> return n
