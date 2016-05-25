@@ -1,4 +1,12 @@
-{-# LANGUAGE DataKinds, TypeOperators, GADTs, KindSignatures, PolyKinds, TypeFamilies,  UndecidableInstances, ExistentialQuantification, ScopedTypeVariables #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 import qualified Control.Monad.Trans.State as State
 import qualified Data.List as List
