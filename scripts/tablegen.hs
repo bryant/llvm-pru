@@ -31,6 +31,8 @@ data SDNode (l :: LeafKind) (a :: SDKind) where
     SDTruncOp :: SDGT a b => SDNode l a -> SDNode N b
     SDExtOp :: SDGT b a => String -> SDNode l a -> SDNode N b
     SDBuildPair :: SDGT b a => SDNode k a -> SDNode l a -> SDNode N b
+    SDLoadOp :: SDIsInt a => SDNode l SDPtr -> SDNode N a
+    SDStoreOp :: SDIsInt a => SDNode k SDPtr -> SDNode l a -> SDNode N SDUnit
     SDPatLeaf :: TypeShow a => String -> Int -> SDNode L a
 
 -- Operand kind
