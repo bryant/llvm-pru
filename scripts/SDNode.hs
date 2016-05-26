@@ -12,6 +12,10 @@ module SDNode where
 import qualified Data.List as List
 import Data.Proxy (Proxy(Proxy))
 import GHC.TypeLits (Symbol, Nat, CmpNat, KnownNat, natVal)
+import Prelude hiding
+    ( add, sub, mul, sdiv, udiv, and, or, xor, addc, adde, subc, sube, smin
+    , smax, umin, umax
+    )
 
 -- kind that denotes SDNode leaf-ness
 data LeafKind = L | N
@@ -97,3 +101,49 @@ comma_join :: [String] -> String
 comma_join = List.intercalate ", "
 
 parens xs = "(" ++ xs ++ ")"
+
+add, sub, mul, sdiv, udiv :: SDIsInt a => SDNode k a -> SDNode l a -> SDNode N a
+and, or, xor, addc, adde :: SDIsInt a => SDNode k a -> SDNode l a -> SDNode N a
+subc, sube, smin, smax :: SDIsInt a => SDNode k a -> SDNode l a -> SDNode N a
+umin, umax :: SDIsInt a => SDNode k a -> SDNode l a -> SDNode N a
+add         = SDBinOp "add"
+sub         = SDBinOp "sub"
+mul         = SDBinOp "mul"
+sdiv        = SDBinOp "sdiv"
+udiv        = SDBinOp "udiv"
+and         = SDBinOp "and"
+or          = SDBinOp "or"
+xor         = SDBinOp "xor"
+addc        = SDBinOp "addc"
+adde        = SDBinOp "adde"
+subc        = SDBinOp "subc"
+sube        = SDBinOp "sube"
+smin        = SDBinOp "smin"
+smax        = SDBinOp "smax"
+umin        = SDBinOp "umin"
+umax        = SDBinOp "umax"
+
+srl, sra, shl, rotl, rotr :: (SDIsInt a, SDIsInt b) => SDNode k a -> SDNode l b
+                          -> SDNode N a
+srl         = SDShiftOp "srl"
+sra         = SDShiftOp "sra"
+shl         = SDShiftOp "shl"
+rotl        = SDShiftOp "rotl"
+rotr        = SDShiftOp "rotr"
+
+sext, zext, anyext :: SDGT b a => SDNode l a -> SDNode N b
+sext        = SDExtOp "sext" 
+zext        = SDExtOp "zext"
+anyext      = SDExtOp "anyext"
+
+trunc :: SDGT a b => SDNode l a -> SDNode N b
+trunc       = SDTruncOp
+
+build_pair :: SDGT b a => SDNode k a -> SDNode l a -> SDNode N b
+build_pair  = SDBuildPair
+
+load :: SDIsInt a => SDNode l SDPtr -> SDNode N a
+load        = SDLoadOp
+
+store :: SDIsInt a => SDNode k SDPtr -> SDNode l a -> SDNode N SDUnit
+store       = SDStoreOp
