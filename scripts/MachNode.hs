@@ -28,3 +28,7 @@ asm_format (Instruction _ rv _ _) = rv
 
 attributes :: MachNode MachInstr -> [IAttr]
 attributes (Instruction _ _ rv _) = rv
+
+extract_subreg      = LLMachNode "EXTRACT_SUBREG"
+subreg_to_reg       = LLMachNode "SUBREG_TO_REG"
+copy_to_regclass    = LLMachNode "COPY_TO_REGCLASS"
