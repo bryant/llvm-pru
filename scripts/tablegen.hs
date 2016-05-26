@@ -104,13 +104,16 @@ parens xs = "(" ++ xs ++ ")"
 
 type TableGen = State Int
 
+new_sd_op :: TypeShow a => TableGen (SDNode L a)
+new_sd_op = SDPatLeaf "" <$> next_int
+
 i32 :: TableGen (SDNode L I32)
-i32 = SDPatLeaf "" <$> next_int
+i32 = new_sd_op
 
 i16 :: TableGen (SDNode L I16)
-i16 = SDPatLeaf "" <$> next_int
+i16 = new_sd_op
 
 i8 :: TableGen (SDNode L I8)
-i8 = SDPatLeaf "" <$> next_int
+i8 = new_sd_op
 
 next_int = State.get >>= \n -> State.modify (+ 1) >> return n
