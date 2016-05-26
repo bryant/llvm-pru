@@ -26,10 +26,21 @@ data SDNode (l :: LeafKind) (a :: SDKind) where
     SDBuildPair :: SDGT b a => SDNode k a -> SDNode l a -> SDNode N b
     SDLoadOp :: SDIsInt a => SDNode l SDPtr -> SDNode N a
     SDStoreOp :: SDIsInt a => SDNode k SDPtr -> SDNode l a -> SDNode N SDUnit
+    SDSelectCC :: SDNode h a -> SDNode j a -> SDNode k b -> SDNode l b
+               -> CondCode -> SDNode N b
+    SDBrCC :: CondCode -> SDNode j a -> SDNode k a -> SDNode l BasicBlock
+           -> SDNode N SDUnit
+    SDBr :: SDNode l BasicBlock -> SDNode N SDUnit
     SDPatLeaf :: TypeShow a => String -> Int -> SDNode L a
 
 -- Operand kind
 data SDKind = SDI Nat | Imm Nat | SDPtr | SDUnit | BasicBlock
+
+data CondCode
+    = SETOEQ | SETOGT | SETOGE | SETOLT | SETOLE | SETONE | SETO
+    | SETUO | SETUEQ | SETUGT | SETUGE | SETULT | SETULE | SETUNE
+    | SETEQ | SETGT | SETGE | SETLT | SETLE | SETNE
+    deriving (Show, Eq)
 
 type I32 = SDI 32
 type I16 = SDI 16
