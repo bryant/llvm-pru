@@ -93,7 +93,7 @@ instance KnownNat n => TypeShow (SDI n) where
 instance KnownNat n => TypeShow (Imm n) where
     type_show _ = "i" ++ show (natVal (Proxy :: Proxy n)) ++ "imm"
 
-op_print :: String -> [ExistSDNode] -> String
+op_print :: Show a => String -> [a] -> String
 op_print opname [] = opname
 op_print opname xs = opname ++ " " ++ comma_join (map show xs)
 
