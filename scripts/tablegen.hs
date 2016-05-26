@@ -46,6 +46,10 @@ data SDNode (l :: LeafKind) (a :: SDKind) where
 -- Operand kind
 data SDKind = SDI Nat | Imm Nat | SDPtr | SDUnit | BasicBlock
 
+type I32 = SDI 32
+type I16 = SDI 16
+type I8 = SDI 8
+
 class SDIsInt z
 
 instance SDIsInt (SDI n)
@@ -100,13 +104,13 @@ parens xs = "(" ++ xs ++ ")"
 
 type TableGen = State Int
 
-i32 :: TableGen (SDNode L (SDI 32))
+i32 :: TableGen (SDNode L I32)
 i32 = SDPatLeaf "" <$> next_int
 
-i16 :: TableGen (SDNode L (SDI 16))
+i16 :: TableGen (SDNode L I16)
 i16 = SDPatLeaf "" <$> next_int
 
-i8 :: TableGen (SDNode L (SDI 8))
+i8 :: TableGen (SDNode L I8)
 i8 = SDPatLeaf "" <$> next_int
 
 next_int = State.get >>= \n -> State.modify (+ 1) >> return n
