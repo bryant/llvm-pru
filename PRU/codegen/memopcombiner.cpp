@@ -105,7 +105,7 @@ struct MemLoc {
         return true;
     }
 
-    bool operator<(const MemLoc &other) {
+    bool operator<(const MemLoc &other) const {
         // assert(kind == other.kind);
         if (kind == MemLoc::BaseOffset) {
             return start < other.start;
