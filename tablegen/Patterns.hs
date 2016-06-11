@@ -202,6 +202,10 @@ quick_branch = do
         brcc unorderedcc (mb_zext l) (mb_zext r) destblock ->> pru_qb destblock l r
         brcc unorderedcc (mb_zext l) (mb_zext rimm) destblock ->> pru_qb destblock l rimm
 
+jump = run_tablegen $ do
+    dest <- bb
+    br dest ->> pru_jmp dest
+
 selectccs = do
     ((cc, ucc), pru_sel) <- zip condcodes
                                 [pru_selectne, pru_selecteq, pru_selectgt,
@@ -232,4 +236,5 @@ allpats = concat
     , shiftop_zext_is_free
     , quick_branch
     , selectccs
+    , jump
     ]

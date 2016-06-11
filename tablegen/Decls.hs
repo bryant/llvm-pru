@@ -103,6 +103,12 @@ selectcc op.op.op.op.cc
 
 pru_mov = pru2 "pru_mov" "MOV" []
 
+pru_jmp dest = MachInstr instr [m dest]
+    where
+    asmp [dest] _ = "JMP " ++ opshow dest
+    attrs = [IsBranch True, IsTerminator True, IsBarrier True]
+    instr = Instruction Nothing [BasicBlock] asmp "pru_jmp" attrs
+
 -- load/store
 pru_lbbo width addr = MachInstr instr [m addr]
     where
