@@ -49,7 +49,7 @@ struct PruISel : public SelectionDAGISel {
 
         case ISD::FrameIndex:
             rv = CurDAG->SelectNodeTo(
-                op, PRU::pru_add_reg32_reg32_i32imm, MVT::i32,
+                op, PRU::pru_add_imm, MVT::i32,
                 CurDAG->getTargetFrameIndex(
                     cast<FrameIndexSDNode>(op)->getIndex(), MVT::i32),
                 CurDAG->getTargetConstant(0, SDLoc(op), MVT::i32));

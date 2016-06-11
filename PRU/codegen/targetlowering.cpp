@@ -306,7 +306,18 @@ unsigned select_cc_to_branch_code(MachineInstr &i) {
     switch (i.getOpcode()) {
     default:
         llvm_unreachable("invalid select_cc op code");
-#include "select_to_branch.h"
+    case PRU::pru_selectne:
+        return PRU::pru_qbne;
+    case PRU::pru_selecteq:
+        return PRU::pru_qbeq;
+    case PRU::pru_selectgt:
+        return PRU::pru_qbgt;
+    case PRU::pru_selectge:
+        return PRU::pru_qbge;
+    case PRU::pru_selectlt:
+        return PRU::pru_qblt;
+    case PRU::pru_selectle:
+        return PRU::pru_qble;
     }
 }
 
