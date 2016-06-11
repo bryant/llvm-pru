@@ -18,6 +18,7 @@ data IAttr
     = IsReturn Bool | IsBranch Bool | IsTerminator Bool | HasSideEffects Bool
     | IsPseudo Bool | IsMoveImm Bool | Uses [String] | Defs [String]
     | UsesCustomInserter Bool | IsBarrier Bool | IsRematerializable Bool
+    | IsCall Bool
 
 data MachNode
     = MachInstr Instruction [MachNode]
@@ -86,6 +87,7 @@ attr_show (Uses regs) = ("Uses", "[" ++ comma_join regs ++ "]")
 attr_show (Defs regs) = ("Defs", "[" ++ comma_join regs ++ "]")
 attr_show (IsBarrier n) = ("isBarrier", to_bit n)
 attr_show (IsRematerializable n) = ("isReMaterializable", to_bit n)
+attr_show (IsCall n) = ("isCall", to_bit n)
 
 to_bit False = "0"
 to_bit True = "1"

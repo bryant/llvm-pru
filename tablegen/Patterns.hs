@@ -60,6 +60,8 @@ condcode        = next_op Unknown "condcode"
 bb = next_op_ BasicBlock
 addr = next_op_ Addr
 regaddr = next_op Addr "regaddr"
+tglobaladdr = next_op Addr "tglobaladdr"
+texternalsym = next_op Addr "texternalsym"
 
 widths :: [Int]
 widths = [8, 16, 32]
@@ -217,6 +219,16 @@ jump = run_tablegen $ do
     dest <- bb
     br dest ->> pru_jmp dest
 
+calls = run_tablegen $ do
+    global <- tglobaladdr
+    call global ->> pru_call global
+
+    external <- texternalsym
+    call external ->> pru_call external
+
+    regsym <- i 32
+    call regsym ->> pru_call regsym
+
 selectccs = do
     ((cc, ucc), pru_sel) <- zip condcodes
                                 [pru_selectne, pru_selecteq, pru_selectgt,
@@ -249,4 +261,5 @@ allpats = concat
     , selectccs
     , jump
     , pairs
+    , calls
     ]

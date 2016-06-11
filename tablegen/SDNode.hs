@@ -85,6 +85,8 @@ brcc cc l r jmp = SDNode "brcc" [SDCondCode cc, l, r, jmp]
 
 br jmp = SDNode "br" [jmp]
 
+call addr = SDNode "call" [addr]
+
 selectcc l r tval fval cc = SDNode "selectcc" [l, r, tval, fval, SDCondCode cc]
 
 const8 = SDConst 8

@@ -109,6 +109,12 @@ pru_jmp dest = MachInstr instr [m dest]
     attrs = [IsBranch True, IsTerminator True, IsBarrier True]
     instr = Instruction Nothing [BasicBlock] asmp "pru_jmp" attrs
 
+pru_call addr = MachInstr instr [m addr]
+    where
+    instr = Instruction Nothing [Unknown] asmp "pru_call" attrs
+    attrs = [IsCall True, Defs ["r3_w2"], Uses ["r2"]]
+    asmp [calladdr] _ = "JAL r3.w2, " ++ opshow calladdr
+
 -- load/store
 pru_lbbo width addr = MachInstr instr [m addr]
     where
