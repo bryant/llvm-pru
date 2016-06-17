@@ -93,6 +93,9 @@ selectcc op.op.op.op.cc
             let pref = "pru_" ++ op ++ "_imm",
             let mnem = map toUpper op]
 
+-- defined in miscinstrs.td
+pru_ldi32 s = MNode "pru_ldi32" [m s]
+
 -- branches
 [pru_qbgt, pru_qbge, pru_qblt, pru_qble, pru_qbeq, pru_qbne, pru_qba, pru_qbbs,
     pru_qbbc] =

@@ -62,6 +62,7 @@ addr = next_op_ Addr
 regaddr = next_op Addr "regaddr"
 tglobaladdr = next_op Addr "tglobaladdr"
 texternalsym = next_op Addr "texternalsym"
+tblockaddress = next_op Addr "tblockaddress"
 
 widths :: [Int]
 widths = [8, 16, 32]
@@ -246,6 +247,17 @@ selectccs = do
         selectcc (mb_zext l) (mb_zext r) t f ucc ->> pru_sel l r t f
         selectcc (mb_zext l) (mb_zext rimm) t f ucc ->> pru_sel l rimm t f
 
+target_constants = run_tablegen $ do
+    global <- tglobaladdr
+    targetconst global ->> pru_ldi32 global
+
+    external <- texternalsym
+    targetconst external ->> pru_ldi32 external
+
+    blockaddress <- tblockaddress
+    targetconst blockaddress ->> pru_ldi32 blockaddress
+    where targetconst s = SDNode "targetconst" [s]
+
 allpats = concat
     [ basic
     , basic_imm
@@ -262,4 +274,5 @@ allpats = concat
     , jump
     , pairs
     , calls
+    , target_constants
     ]
