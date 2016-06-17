@@ -186,6 +186,17 @@ trunc_is_free = run_tablegen $ do
     trunc 16 src32 ->> extract_subreg src32 (subidx 16 0)
     trunc 16 (srl src32 $ const32 16) ->> extract_subreg src32 (subidx 16 16)
 
+pairs = run_tablegen $ do
+    low16 <- i16
+    high16 <- i16
+    let low' = insert_subreg (implicit_def 32) low16 (subidx 16 0)
+    build_pair low16 high16 ->> insert_subreg low' high16 (subidx 16 16)
+
+    low8 <- i8
+    high8 <- i8
+    let low' = insert_subreg (implicit_def 16) low8 (subidx 8 0)
+    build_pair low8 high8 ->> insert_subreg low' high8 (subidx 8 8)
+
 quick_branch = do
     ((cc, unorderedcc), pru_qb) <- zip condcodes
                                        [pru_qbne, pru_qbeq, pru_qbgt, pru_qbge,
@@ -237,4 +248,5 @@ allpats = concat
     , quick_branch
     , selectccs
     , jump
+    , pairs
     ]

@@ -109,3 +109,8 @@ subreg_to_reg destwidth src subi = MNode "SUBREG_TO_REG" [idx, m src, m subi]
     where idx = MNode ("i" ++ show destwidth) [MMisc "0"]
 
 extract_subreg src subi = MNode "EXTRACT_SUBREG" [m src, m subi]
+
+insert_subreg reg subreg subi = MNode "INSERT_SUBREG" [m reg, m subreg, m subi]
+
+-- IMPLICIT_DEF needs its own set of parens
+implicit_def n = MNode ("i" ++ show n) [MMisc "(IMPLICIT_DEF)"]
