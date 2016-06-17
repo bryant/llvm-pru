@@ -28,6 +28,11 @@ pru_branch llname opcode attrs bb l r = MachInstr instr [m bb, m l, m r]
     instr = Instruction Nothing [BasicBlock, Unknown, Unknown] asmp llname attrs
     asmp [bb', l, r] _ = opcode ++ " " ++ comma_join (map opshow [bb', l, r])
 
+pru_select llname attrs l r t f = MachInstr instr [m l, m r, m t, m f]
+    where
+    instr = Instruction (Just Unknown) (replicate 4 Unknown) asmp llname attrs
+    asmp inops dest = llname ++ " " ++ comma_join (map opshow $ dest : inops)
+
 {-
 * add r.r.op255
 * sub
@@ -114,3 +119,8 @@ pru_sbbo width val addr = MachInstr instr [m val, m addr]
         "SBBO &" ++ comma_join [opshow reg, opshow memloc, show bytes]
     llname = "pru_sbbo" ++ reg_suffix [width]
     bytes = width `quot` 8
+
+[pru_selectne, pru_selecteq, pru_selectgt, pru_selectge, pru_selectlt,
+    pru_selectle] =
+        [pru_select ("pru_select" ++ cmp) [UsesCustomInserter True] |
+            cmp <- words "ne eq gt ge lt le"]

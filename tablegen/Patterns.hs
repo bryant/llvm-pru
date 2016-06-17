@@ -202,7 +202,22 @@ quick_branch = do
         brcc unorderedcc (mb_zext l) (mb_zext r) destblock ->> pru_qb destblock l r
         brcc unorderedcc (mb_zext l) (mb_zext rimm) destblock ->> pru_qb destblock l rimm
 
-selectccs = undefined
+selectccs = do
+    ((cc, ucc), pru_sel) <- zip condcodes
+                                [pru_selectne, pru_selecteq, pru_selectgt,
+                                 pru_selectge, pru_selectlt, pru_selectle]
+    enumerator3_ $ \lcmpwidth rcmpwidth valwidth -> do
+        l <- i lcmpwidth
+        r <- i rcmpwidth
+        rimm <- imm_255 rcmpwidth
+        t <- i valwidth
+        f <- i valwidth
+        let mb_zext = maybe_zext_to (max lcmpwidth rcmpwidth)
+
+        selectcc (mb_zext l) (mb_zext r) t f cc ->> pru_sel l r t f
+        selectcc (mb_zext l) (mb_zext rimm) t f cc ->> pru_sel l rimm t f
+        selectcc (mb_zext l) (mb_zext r) t f ucc ->> pru_sel l r t f
+        selectcc (mb_zext l) (mb_zext rimm) t f ucc ->> pru_sel l rimm t f
 
 allpats = concat
     [ basic
@@ -216,4 +231,5 @@ allpats = concat
     , binop_zext_is_free
     , shiftop_zext_is_free
     , quick_branch
+    , selectccs
     ]
