@@ -83,6 +83,12 @@ enumerator3_ = enumerator3 $ \_ _ _ -> True
 (->>) :: SDNode -> MachNode -> TableGen ()
 sd ->> mach = Writer.tell [Pattern sd mach]
 
+maybe_zext_to targetwidth op@(SDLeaf (Reg n) _ _)
+    | n < targetwidth = zext targetwidth op
+maybe_zext_to targetwidth op@(SDLeaf (Imm n) _ _)
+    | n < targetwidth = zext targetwidth op
+maybe_zext_to _ op = op
+
 -- patterns
 
 basic :: [Pattern]
@@ -112,6 +118,34 @@ basic_imm_31 = do
         shift <- imm_31 shiftwidth
         src <- i srcwidth
         sd src shift ->> mach src shift
+
+binop_zext_is_free = do
+    (sd, mach, mach_imm) <-
+        zip3 [add, sub, and, or, xor, shl, srl]
+             [pru_add, pru_sub, pru_and, pru_or, pru_xor, pru_lsl, pru_lsr]
+             [pru_add_imm, pru_sub_imm, pru_and_imm, pru_or_imm, pru_xor_imm,
+              pru_lsl_imm, pru_lsr_imm]
+    enumerator3 (\dest lw rw -> dest >= max lw rw) $ \dest lw rw -> do
+        l <- i lw
+        r <- i rw
+        rimm <- imm_255 rw
+        let mb_zext = maybe_zext_to dest
+        sd (mb_zext l) (mb_zext r) ->> mach l r
+        sd (mb_zext l) (mb_zext rimm) ->> mach_imm l rimm
+
+-- src and shift operands of shift nodes are permitted to be different widths
+-- (cf. TargetSelectionDAG.td)
+shiftop_zext_is_free = do
+    (sd, mach, mach_imm) <- zip3 [shl, srl]
+                                 [pru_lsl, pru_lsr]
+                                 [pru_lsl_imm, pru_lsr_imm]
+    enumerator2 (/=) $ \srcwidth shiftwidth -> do
+        src <- i srcwidth
+        shift <- i shiftwidth
+        shiftimm <- imm_255 shiftwidth
+
+        sd src shift ->> mach src shift
+        sd src shiftimm ->> mach_imm src shiftimm
 
 fixed_loads = enumerator (const True) $ \width -> do
     addr <- addr
@@ -165,4 +199,6 @@ allpats = concat
     , direct_zext
     , direct_anyext
     , trunc_is_free
+    , binop_zext_is_free
+    , shiftop_zext_is_free
     ]
