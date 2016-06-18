@@ -21,6 +21,13 @@ pru2 llname opcode attrs src = MachInstr instr [m src]
     instr = Instruction (Just Unknown) [Unknown] asmp llname attrs
     asmp [src] dest = opcode ++ " " ++ comma_join (map opshow [dest, src])
 
+pru_branch :: (ToMLeaf u, ToMLeaf v, ToMLeaf w) => String -> String -> [IAttr]
+           -> u -> v -> w -> MachNode
+pru_branch llname opcode attrs bb l r = MachInstr instr [m bb, m l, m r]
+    where
+    instr = Instruction Nothing [BasicBlock, Unknown, Unknown] asmp llname attrs
+    asmp [bb', l, r] _ = opcode ++ " " ++ comma_join (map opshow [bb', l, r])
+
 {-
 * add r.r.op255
 * sub
@@ -47,15 +54,15 @@ sxin
 sxout
 sxchg
 * jmp jt
-qbgt jt.r.op255
-qbge
-qblt
-qble
-qbeq
-qbne
-qba
-qbbs jt.r.op31
-qbbc
+* qbgt jt.r.op255
+* qbge
+* qblt
+* qble
+* qbeq
+* qbne
+* qba
+* qbbs jt.r.op31
+* qbbc
 wbs
 wbc
 hlt -
@@ -80,6 +87,14 @@ selectcc op.op.op.op.cc
             op <- words "add sub rsb and or xor min max nop lsl lsr",
             let pref = "pru_" ++ op ++ "_imm",
             let mnem = map toUpper op]
+
+-- branches
+[pru_qbgt, pru_qbge, pru_qblt, pru_qble, pru_qbeq, pru_qbne, pru_qba, pru_qbbs,
+    pru_qbbc] =
+        [pru_branch pref mnem [IsBranch True, IsTerminator True] |
+            op <- words "gt ge lt le eq ne a bs bc",
+            let pref = "pru_qb" ++ op,
+            let mnem = map toUpper $ "qb" ++ op]
 
 pru_mov = pru2 "pru_mov" "MOV" []
 

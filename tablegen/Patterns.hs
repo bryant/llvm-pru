@@ -186,7 +186,21 @@ trunc_is_free = run_tablegen $ do
     trunc 16 src32 ->> extract_subreg src32 (subidx 16 0)
     trunc 16 (srl src32 $ const32 16) ->> extract_subreg src32 (subidx 16 16)
 
-quick_branch = undefined
+quick_branch = do
+    ((cc, unorderedcc), pru_qb) <- zip condcodes
+                                       [pru_qbne, pru_qbeq, pru_qbgt, pru_qbge,
+                                        pru_qblt, pru_qble]
+    enumerator2_ $ \lwidth rwidth -> do
+        l <- i lwidth
+        r <- i rwidth
+        rimm <- imm_255 rwidth
+        destblock <- bb
+        let mb_zext = maybe_zext_to (max lwidth rwidth)
+
+        brcc cc (mb_zext l) (mb_zext r) destblock ->> pru_qb destblock l r
+        brcc cc (mb_zext l) (mb_zext rimm) destblock ->> pru_qb destblock l rimm
+        brcc unorderedcc (mb_zext l) (mb_zext r) destblock ->> pru_qb destblock l r
+        brcc unorderedcc (mb_zext l) (mb_zext rimm) destblock ->> pru_qb destblock l rimm
 
 selectccs = undefined
 
@@ -201,4 +215,5 @@ allpats = concat
     , trunc_is_free
     , binop_zext_is_free
     , shiftop_zext_is_free
+    , quick_branch
     ]
