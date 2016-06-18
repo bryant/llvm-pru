@@ -67,7 +67,7 @@ void PRURegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
            PRUInstrInfo::is_load_multiple(i.getOpcode()) ||
            PRUInstrInfo::is_store(i.getOpcode()) ||
            PRUInstrInfo::is_store_multiple(i.getOpcode()) ||
-           PRUInstrInfo::is_reg_imm_add(i.getOpcode()));
+           i.getOpcode() == PRU::pru_add_imm);
     MachineFunction &f = *i.getParent()->getParent();
     const MachineFrameInfo &mf = *f.getFrameInfo();
 

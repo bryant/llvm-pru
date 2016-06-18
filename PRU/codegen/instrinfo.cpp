@@ -113,12 +113,9 @@ bool PRUInstrInfo::getMemOpBaseRegImmOfs(MachineInstr *i, unsigned &basereg,
 
 bool PRUInstrInfo::is_load(unsigned opc) {
     switch (opc) {
-    case PRU::lbbo_r32:
-    case PRU::lbbo_r16:
-    case PRU::lbbo_r8:
-    case PRU::lbbo_r32_r:
-    case PRU::lbbo_r16_r:
-    case PRU::lbbo_r8_r:
+    case PRU::pru_lbbo_reg32:
+    case PRU::pru_lbbo_reg16:
+    case PRU::pru_lbbo_reg8:
         return true;
     }
     return false;
@@ -130,12 +127,9 @@ bool PRUInstrInfo::is_load_multiple(unsigned opc) {
 
 bool PRUInstrInfo::is_store(unsigned opc) {
     switch (opc) {
-    case PRU::sbbo_r32:
-    case PRU::sbbo_r16:
-    case PRU::sbbo_r8:
-    case PRU::sbbo_r32_r:
-    case PRU::sbbo_r16_r:
-    case PRU::sbbo_r8_r:
+    case PRU::pru_sbbo_reg32:
+    case PRU::pru_sbbo_reg16:
+    case PRU::pru_sbbo_reg8:
         return true;
     }
     return false;
@@ -145,40 +139,6 @@ bool PRUInstrInfo::is_store_multiple(unsigned opc) {
     return opc == PRU::sbbo_multiple;
 }
 
-bool PRUInstrInfo::is_reg_imm_add(unsigned opc) {
-    switch (opc) {
-    case PRU::pru_add_reg8_reg8_i8imm:
-    case PRU::pru_add_reg8_reg8_i16imm:
-    case PRU::pru_add_reg8_reg8_i32imm:
-    case PRU::pru_add_reg8_reg16_i8imm:
-    case PRU::pru_add_reg8_reg16_i16imm:
-    case PRU::pru_add_reg8_reg16_i32imm:
-    case PRU::pru_add_reg8_reg32_i8imm:
-    case PRU::pru_add_reg8_reg32_i16imm:
-    case PRU::pru_add_reg8_reg32_i32imm:
-    case PRU::pru_add_reg16_reg8_i8imm:
-    case PRU::pru_add_reg16_reg8_i16imm:
-    case PRU::pru_add_reg16_reg8_i32imm:
-    case PRU::pru_add_reg16_reg16_i8imm:
-    case PRU::pru_add_reg16_reg16_i16imm:
-    case PRU::pru_add_reg16_reg16_i32imm:
-    case PRU::pru_add_reg16_reg32_i8imm:
-    case PRU::pru_add_reg16_reg32_i16imm:
-    case PRU::pru_add_reg16_reg32_i32imm:
-    case PRU::pru_add_reg32_reg8_i8imm:
-    case PRU::pru_add_reg32_reg8_i16imm:
-    case PRU::pru_add_reg32_reg8_i32imm:
-    case PRU::pru_add_reg32_reg16_i8imm:
-    case PRU::pru_add_reg32_reg16_i16imm:
-    case PRU::pru_add_reg32_reg16_i32imm:
-    case PRU::pru_add_reg32_reg32_i8imm:
-    case PRU::pru_add_reg32_reg32_i16imm:
-    case PRU::pru_add_reg32_reg32_i32imm:
-        return true;
-    }
-    return false;
-}
-
 void PRUInstrInfo::storeRegToStackSlot(MachineBasicBlock &b,
                                        MachineBasicBlock::iterator insert_point,
                                        unsigned reg, bool kill, int frameindex,
@@ -186,11 +146,11 @@ void PRUInstrInfo::storeRegToStackSlot(MachineBasicBlock &b,
                                        const TargetRegisterInfo *) const {
     unsigned opcode;
     if (PRU::reg32RegClass.hasSubClassEq(regclass)) {
-        opcode = PRU::sbbo_r32;
+        opcode = PRU::pru_sbbo_reg32;
     } else if (PRU::reg16RegClass.hasSubClassEq(regclass)) {
-        opcode = PRU::sbbo_r16;
+        opcode = PRU::pru_sbbo_reg16;
     } else if (PRU::reg8RegClass.hasSubClassEq(regclass)) {
-        opcode = PRU::sbbo_r8;
+        opcode = PRU::pru_sbbo_reg8;
     } else {
         dbgs() << "got register size " << regclass->getSize() << "\n";
         llvm_unreachable("unknown register class");
@@ -215,11 +175,11 @@ void PRUInstrInfo::loadRegFromStackSlot(MachineBasicBlock &b,
                                         const TargetRegisterInfo *) const {
     unsigned opcode;
     if (PRU::reg32RegClass.hasSubClassEq(regclass)) {
-        opcode = PRU::lbbo_r32;
+        opcode = PRU::pru_lbbo_reg32;
     } else if (PRU::reg16RegClass.hasSubClassEq(regclass)) {
-        opcode = PRU::lbbo_r16;
+        opcode = PRU::pru_lbbo_reg16;
     } else if (PRU::reg8RegClass.hasSubClassEq(regclass)) {
-        opcode = PRU::lbbo_r8;
+        opcode = PRU::pru_lbbo_reg8;
     } else {
         dbgs() << "got register size " << regclass->getSize() << "\n";
         llvm_unreachable("unknown register class");
@@ -241,51 +201,7 @@ void PRUInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
                                MachineBasicBlock::iterator I, DebugLoc DL,
                                unsigned DestReg, unsigned SrcReg,
                                bool KillSrc) const {
-    using RegSize = PRURegisterInfo::RegSize;
-    unsigned Opc;
-
-    switch (PRURegisterInfo::reg_size(DestReg)) {
-    case RegSize::Byte:
-        switch (PRURegisterInfo::reg_size(SrcReg)) {
-        case RegSize::Byte:
-            Opc = PRU::pru_mov_reg8_reg8;
-            break;
-        case RegSize::Word:
-            Opc = PRU::pru_mov_reg8_reg16;
-            break;
-        case RegSize::DWord:
-            Opc = PRU::pru_mov_reg8_reg32;
-            break;
-        }
-        break;
-    case RegSize::Word:
-        switch (PRURegisterInfo::reg_size(SrcReg)) {
-        case RegSize::Byte:
-            Opc = PRU::pru_mov_reg16_reg8;
-            break;
-        case RegSize::Word:
-            Opc = PRU::pru_mov_reg16_reg16;
-            break;
-        case RegSize::DWord:
-            Opc = PRU::pru_mov_reg16_reg32;
-            break;
-        }
-        break;
-    case RegSize::DWord:
-        switch (PRURegisterInfo::reg_size(SrcReg)) {
-        case RegSize::Byte:
-            Opc = PRU::pru_mov_reg32_reg8;
-            break;
-        case RegSize::Word:
-            Opc = PRU::pru_mov_reg32_reg16;
-            break;
-        case RegSize::DWord:
-            Opc = PRU::pru_mov_reg32_reg32;
-            break;
-        }
-        break;
-    }
-
+    unsigned Opc = PRU::pru_mov;
     BuildMI(MBB, I, DL, get(Opc), DestReg)
         .addReg(SrcReg, getKillRegState(KillSrc));
 }
@@ -332,12 +248,12 @@ unsigned PRUInstrInfo::InsertBranch(MachineBasicBlock &mbb,
             return 1;
         }
 
-        BuildMI(&mbb, dl, get(PRU::pru_jmp_jump_target)).addMBB(f);
+        BuildMI(&mbb, dl, get(PRU::pru_jmp)).addMBB(f);
         return 2;
 
     } else if (f == nullptr) {
         // terminate with single uncond
-        BuildMI(&mbb, dl, this->get(PRU::pru_jmp_jump_target)).addMBB(t);
+        BuildMI(&mbb, dl, this->get(PRU::pru_jmp)).addMBB(t);
         return 1;
     }
 
@@ -348,7 +264,18 @@ unsigned reverse_branch_condition(unsigned opcode) {
     switch (opcode) {
     default:
         llvm_unreachable("reverse_branch_condition: invalid branch op code");
-#include "reversed_branches.h"
+    case PRU::pru_qbne:
+        return PRU::pru_qbeq;
+    case PRU::pru_qbeq:
+        return PRU::pru_qbne;
+    case PRU::pru_qbgt:
+        return PRU::pru_qble;
+    case PRU::pru_qbge:
+        return PRU::pru_qblt;
+    case PRU::pru_qblt:
+        return PRU::pru_qbge;
+    case PRU::pru_qble:
+        return PRU::pru_qbgt;
     }
 }
 

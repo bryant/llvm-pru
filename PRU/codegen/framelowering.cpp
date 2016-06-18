@@ -122,7 +122,7 @@ void PRUFrameLowering::emitPrologue(MachineFunction &f,
         DebugLoc dl;
 
         if (stacksize <= 255) {
-            BuildMI(b, ins, dl, pruinfo.get(PRU::pru_sub_reg32_reg32_i32imm))
+            BuildMI(b, ins, dl, pruinfo.get(PRU::pru_sub_imm))
                 .addReg(PRU::r2)
                 .addReg(PRU::r2)
                 .addImm(stacksize)
@@ -130,7 +130,7 @@ void PRUFrameLowering::emitPrologue(MachineFunction &f,
         } else {
             BuildMI(b, ins, dl, pruinfo.get(PRU::pru_ldi32), PRU::r0)
                 .addImm(stacksize);
-            BuildMI(b, ins, dl, pruinfo.get(PRU::pru_sub_reg32_reg32_reg32))
+            BuildMI(b, ins, dl, pruinfo.get(PRU::pru_sub))
                 .addReg(PRU::r2)
                 .addReg(PRU::r2)
                 .addReg(PRU::r0)
@@ -147,7 +147,7 @@ void PRUFrameLowering::emitEpilogue(MachineFunction &f,
         DebugLoc dl;
 
         if (stacksize <= 255) {
-            BuildMI(b, ins, dl, pruinfo.get(PRU::pru_add_reg32_reg32_i32imm))
+            BuildMI(b, ins, dl, pruinfo.get(PRU::pru_add_imm))
                 .addReg(PRU::r2)
                 .addReg(PRU::r2)
                 .addImm(stacksize)
@@ -155,7 +155,7 @@ void PRUFrameLowering::emitEpilogue(MachineFunction &f,
         } else {
             BuildMI(b, ins, dl, pruinfo.get(PRU::pru_ldi32), PRU::r0)
                 .addImm(stacksize);
-            BuildMI(b, ins, dl, pruinfo.get(PRU::pru_add_reg32_reg32_reg32))
+            BuildMI(b, ins, dl, pruinfo.get(PRU::pru_add))
                 .addReg(PRU::r2)
                 .addReg(PRU::r2)
                 .addReg(PRU::r0)
