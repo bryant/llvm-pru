@@ -62,8 +62,8 @@ bool PRUInstrInfo::shouldScheduleLoadsNear(SDNode *l0, SDNode *l1, int64_t off0,
     dbgs() << "\n";
     dbgs() << "(" << off0 << ", " << off1 << ") num loads = " << num_loads
            << "\n";
-    dbgs() << "returning " << (num_loads < 6) << "\n";
-    return num_loads < 6;
+    dbgs() << "returning true\n";
+    return true;
 }
 
 bool PRUInstrInfo::shouldClusterLoads(MachineInstr *l0, MachineInstr *l1,
