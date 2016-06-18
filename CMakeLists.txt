@@ -48,26 +48,3 @@ add_subdirectory("${LLVM_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/llvm")
 
 configure_file("${CMAKE_SOURCE_DIR}/test/lit.cfg.in"
     "${CMAKE_SOURCE_DIR}/test/lit.cfg")
-
-macro(gen2 selector out_file)
-    set(GEN2 "${CMAKE_SOURCE_DIR}/tablegen/Main.hs"
-             "${CMAKE_SOURCE_DIR}/tablegen/Patterns.hs"
-             "${CMAKE_SOURCE_DIR}/tablegen/Decls.hs"
-             "${CMAKE_SOURCE_DIR}/tablegen/MachNode.hs"
-             "${CMAKE_SOURCE_DIR}/tablegen/SDNode.hs")
-
-    add_custom_command(
-        OUTPUT "${out_file}"
-        COMMAND runghc "Main.hs" "${selector}" "${out_file}"
-        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/tablegen"
-        DEPENDS "${GEN2}")
-endmacro(gen2)
-
-set(PRU_GENERATED_DIR "${CMAKE_SOURCE_DIR}/PRU/generated")
-gen2("decls" "${PRU_GENERATED_DIR}/instructions.td")
-gen2("pats" "${PRU_GENERATED_DIR}/patterns.td")
-
-add_custom_target(generated
-    DEPENDS "${PRU_GENERATED_DIR}/instructions.td"
-            "${PRU_GENERATED_DIR}/patterns.td")
-add_dependencies(LLVMPRUCodeGen generated)

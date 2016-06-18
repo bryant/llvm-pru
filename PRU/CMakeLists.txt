@@ -1,4 +1,39 @@
-set(LLVM_TARGET_DEFINITIONS tablegen/pru.td)
+macro(gen2 selector out_file)
+    set(GEN2 "${CMAKE_SOURCE_DIR}/tablegen/Main.hs"
+             "${CMAKE_SOURCE_DIR}/tablegen/Patterns.hs"
+             "${CMAKE_SOURCE_DIR}/tablegen/Decls.hs"
+             "${CMAKE_SOURCE_DIR}/tablegen/MachNode.hs"
+             "${CMAKE_SOURCE_DIR}/tablegen/SDNode.hs")
+
+    add_custom_command(
+        OUTPUT "${out_file}"
+        COMMAND runghc "Main.hs" "${selector}" "${out_file}"
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/tablegen"
+        DEPENDS "${GEN2}")
+    set_source_files_properties("${out_file}" PROPERTIES GENERATED 1)
+endmacro(gen2)
+
+gen2("decls" "${CMAKE_CURRENT_SOURCE_DIR}/generated/instructions.td")
+gen2("pats" "${CMAKE_CURRENT_SOURCE_DIR}/generated/patterns.td")
+
+set(PRU_TD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tablegen")
+set(ALL_PRU_TDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/generated/instructions.td"
+    "${CMAKE_CURRENT_SOURCE_DIR}/generated/patterns.td"
+    "${PRU_TD_DIR}/pru.td"
+    "${PRU_TD_DIR}/miscinstrs.td"
+    "${PRU_TD_DIR}/optypes.td"
+    "${PRU_TD_DIR}/registers.td"
+    "${PRU_TD_DIR}/callingconv.td")
+
+# stupid hack needed to add dependency on non-project-root *.tds
+add_custom_command(OUTPUT "${PRU_TD_DIR}/main.td"
+                   COMMAND ${CMAKE_COMMAND} -E copy "${PRU_TD_DIR}/pru.td"
+                                                    "${PRU_TD_DIR}/main.td"
+                   DEPENDS ${ALL_PRU_TDS})
+set_source_files_properties("${PRU_TD_DIR}/main.td" PROPERTIES GENERATED 1)
+
+set(LLVM_TARGET_DEFINITIONS "${PRU_TD_DIR}/main.td")
 
 tablegen(LLVM registerinfo.inc -gen-register-info)
 tablegen(LLVM instrinfo.inc -gen-instr-info)
