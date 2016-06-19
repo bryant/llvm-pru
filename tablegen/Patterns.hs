@@ -96,9 +96,8 @@ maybe_zext_to _ op = op
 
 basic :: [Pattern]
 basic = do
-    (sd, mach) <- zip [add, sub, and, or, xor, shl, srl]
-                      [pru_add, pru_sub, pru_and, pru_or, pru_xor, pru_lsl,
-                       pru_lsr]
+    (sd, mach) <- zip [add, sub, and, or, xor]
+                      [pru_add, pru_sub, pru_and, pru_or, pru_xor]
     enumerator (const True) $ \width -> do
         l <- i width
         r <- i width
@@ -113,14 +112,6 @@ basic_imm = do
         lhs <- i width
         rhs <- imm_255 width
         sd lhs rhs ->> mach lhs rhs
-
-basic_imm_31 :: [Pattern]
-basic_imm_31 = do
-    (sd, mach) <- zip [shl, srl] [pru_lsl_imm, pru_lsr_imm]
-    enumerator2_ $ \srcwidth shiftwidth -> do
-        shift <- imm_31 shiftwidth
-        src <- i srcwidth
-        sd src shift ->> mach src shift
 
 binop_zext_is_free = do
     (sd, mach, mach_imm) <-
@@ -138,14 +129,14 @@ binop_zext_is_free = do
 
 -- src and shift operands of shift nodes are permitted to be different widths
 -- (cf. TargetSelectionDAG.td)
-shiftop_zext_is_free = do
+shiftops = do
     (sd, mach, mach_imm) <- zip3 [shl, srl]
                                  [pru_lsl, pru_lsr]
                                  [pru_lsl_imm, pru_lsr_imm]
     enumerator2 (/=) $ \srcwidth shiftwidth -> do
         src <- i srcwidth
         shift <- i shiftwidth
-        shiftimm <- imm_255 shiftwidth
+        shiftimm <- imm_31 shiftwidth
 
         sd src shift ->> mach src shift
         sd src shiftimm ->> mach_imm src shiftimm
@@ -261,14 +252,13 @@ target_constants = run_tablegen $ do
 allpats = concat
     [ basic
     , basic_imm
-    , basic_imm_31
     , fixed_loads
     , fixed_stores
     , direct_zext
     , direct_anyext
     , trunc_is_free
     , binop_zext_is_free
-    , shiftop_zext_is_free
+    , shiftops
     , quick_branch
     , selectccs
     , jump
